@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/Emmatassone/Bots-PPI/README.md">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="images/bots-ppi-logo.jpg" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">Bots-PPI</h3>
