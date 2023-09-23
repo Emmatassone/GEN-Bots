@@ -12,7 +12,7 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![GNU GPLv3 License][license-shield]][license-url]
 
 
 
@@ -162,7 +162,7 @@ Don't forget to give the project a star! Thanks again!
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the GNU GPLv3 License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -187,7 +187,7 @@ A special thanks should be done to the following open-source projects.
 * [Choose an Open Source License](https://choosealicense.com)
 * [Img Shields](https://shields.io)
 * [GitHub Pages](https://pages.github.com)
-* [OpenBB](https://my.openbb.co/app/terminal)
+* [OpenBB Terminal](https://my.openbb.co/app/terminal)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -204,6 +204,6 @@ A special thanks should be done to the following open-source projects.
 [issues-shield]: https://img.shields.io/github/issues/Emmatassone/Bots-PPI.svg?style=for-the-badge
 [issues-url]: https://github.com/Emmatassone/Bots-PPI/issues
 [license-shield]: https://img.shields.io/github/license/Emmatassone/Bots-PPI.svg?style=for-the-badge
-[license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE.txt
+[license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE
 [vectorbt-image]: https://vectorbt.dev/assets/logo/header.svg
 [vectorbt-url]: https://vectorbt.dev/
