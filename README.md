@@ -218,5 +218,5 @@ Use this space to list resources you find helpful and would like to give credit 
 [license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE.txt
 [pandas-image]: https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Pandas_logo.svg/512px-Pandas_logo.svg.png
 [pandas-url]: https://pandas.pydata.org/
-[vectorbt-image]: https://github.com/polakowo/vectorbt/tree/master/docs/docs/assets/logo/logo.svg
+[vectorbt-image]: https://numpy.org/images/logo.svg
 [vectorbt-url]: https://vectorbt.dev/
