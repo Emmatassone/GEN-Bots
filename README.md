@@ -73,7 +73,7 @@ Bots-PPI is a project focused on finding market inefficiencies, build strategies
 
 ### Built With
 
-This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
+The bots are build in python, with the help of the following libraries.
 
 * [![Pandas][pandas-image]][pandas-url]
 * [![vectorbt][vectorbt.image]][vectorbt-url]
@@ -218,5 +218,5 @@ Use this space to list resources you find helpful and would like to give credit 
 [license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE.txt
 [pandas-image]: https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Pandas_logo.svg/512px-Pandas_logo.svg.png
 [pandas-url]: https://pandas.pydata.org/
-[vectorbt-image]: https://vectorbt.dev/assets/logo/header.svg
+[vectorbt-image]: https://github.com/polakowo/vectorbt/tree/master/docs/docs/assets/logo/logo.svg
 [vectorbt-url]: https://vectorbt.dev/
