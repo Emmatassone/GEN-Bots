@@ -23,10 +23,10 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">Best-README-Template</h3>
+  <h3 align="center">Bots-PPI</h3>
 
   <p align="center">
-    An awesome README template to jumpstart your projects!
+    Automated trading strategies
     <br />
     <a href="https://github.com/Emmatassone/Bots-PPI/issues">Report Bug</a> 
   </p>
@@ -75,8 +75,8 @@ Bots-PPI is a project focused on finding market inefficiencies, build strategies
 
 This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
 
-* [![Pandas][pandas.image]][https://pandas.pydata.org/]
-* [![vectorbt][vectorbt.image]][https://vectorbt.dev/]
+* [![Pandas][pandas-image]][pandas-url]
+* [![vectorbt][vectorbt.image]][vectorbt-url]
 
 
 
@@ -216,5 +216,7 @@ Use this space to list resources you find helpful and would like to give credit 
 [issues-url]: https://github.com/Emmatassone/Bots-PPI/issues
 [license-shield]: https://img.shields.io/github/license/Emmatassone/Bots-PPI.svg?style=for-the-badge
 [license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE.txt
-[pandas.image]: https://pypi-camo.global.ssl.fastly.net/705545a847e60d6d4478c76a8146b9000e339c1c/68747470733a2f2f70616e6461732e7079646174612e6f72672f7374617469632f696d672f70616e6461732e737667
-[vecorbt.image]: https://vectorbt.dev/assets/logo/header.svg
+[pandas-image]: https://pypi-camo.global.ssl.fastly.net/705545a847e60d6d4478c76a8146b9000e339c1c/68747470733a2f2f70616e6461732e7079646174612e6f72672f7374617469632f696d672f70616e6461732e737667
+[pandas-url]: https://pandas.pydata.org/
+[vectorbt-image]: https://vectorbt.dev/assets/logo/header.svg
+[vectorbt-url]: https://vectorbt.dev/
