@@ -76,7 +76,7 @@ Bots-PPI is a project focused on finding market inefficiencies, build strategies
 The bots are build in python, with the help of the following libraries.
 
 * [![Pandas][pandas-image]][pandas-url]
-* [![vectorbt][vectorbt.image]][vectorbt-url]
+* [![vectorbt][vectorbt-image]][vectorbt-url]
 
 
 
