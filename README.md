@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/Emmatassone/GE-Bots/README.md">
-    <img src="images/GE-Bots-logo.png" alt="Logo" width="300" height="300">
+    <img src="images/bots-PPI-logo.png" alt="Logo" width="300" height="300">
   </a>
 
   <h3 align="center">GE-Bots</h3>
