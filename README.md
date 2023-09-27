@@ -23,10 +23,10 @@
     <img src="images/bots-ppi-logo.png" alt="Logo" width="300" height="300">
   </a>
 
-  <h3 align="center">Bots-PPI</h3>
+  <h3 align="center">GE-Bots</h3>
 
   <p align="center">
-    Automated trading strategies
+    Automated trading strategies, risk analysis, market analysis, etc
     <br />
     <a href="https://github.com/Emmatassone/Bots-PPI/issues">Report Bug</a> 
   </p>
