@@ -19,8 +19,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/Emmatassone/Bots-PPI/README.md">
-    <img src="images/bots-ppi-logo.png" alt="Logo" width="300" height="300">
+  <a href="https://github.com/Emmatassone/GE-Bots/README.md">
+    <img src="images/GE-Bots-logo.png" alt="Logo" width="300" height="300">
   </a>
 
   <h3 align="center">GE-Bots</h3>
@@ -28,7 +28,7 @@
   <p align="center">
     Automated trading strategies, risk analysis, market analysis, etc
     <br />
-    <a href="https://github.com/Emmatassone/Bots-PPI/issues">Report Bug</a> 
+    <a href="https://github.com/Emmatassone/GE-Bots/issues">Report Bug</a> 
   </p>
 </div>
 
@@ -75,9 +75,10 @@ GE-Bots is a project focused on finding market inefficiencies, build strategies 
 The bots are build in python, with the help of the following libraries.
 
 *  Vectorbt
-   [![vectorbt][vectorbt-image]][vectorbt-url]
+[![vectorbt][vectorbt-image]][vectorbt-url]
+   
 *  Riskfolio
-  [![Riskfolio-Lib][riskfolio-image]][riskfolio-url]
+[![Riskfolio-Lib][riskfolio-image]][riskfolio-url]
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -150,7 +151,7 @@ Distributed under the GNU GPLv3 License. See `LICENSE` for more information.
 
 Emmanuel A. Tassone - [@EmmanuelTassone](https://twitter.com/EmmanuelTassone) - emmanueltassone@gmail.com
 
-Project Link: [https://github.com/Emmatassone/Bots-PPI](https://github.com/Emmatassone/Bots-PPI)
+Project Link: [https://github.com/Emmatassone/GE-Bots](https://github.com/Emmatassone/GE-Bots)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -169,16 +170,16 @@ A special thanks should be done to
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/Emmatassone/Bots-PPI.svg?style=for-the-badge
-[contributors-url]: https://github.com/Emmatassone/Bots-PPI/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Emmatassone/Bots-PPI.svg?style=for-the-badge
-[forks-url]: https://github.com/Emmatassone/Bots-PPI/network/members
-[stars-shield]: https://img.shields.io/github/stars/Emmatassone/Bots-PPI.svg?style=for-the-badge
-[stars-url]: https://github.com/Emmatassone/Bots-PPI/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Emmatassone/Bots-PPI.svg?style=for-the-badge
-[issues-url]: https://github.com/Emmatassone/Bots-PPI/issues
-[license-shield]: https://img.shields.io/github/license/Emmatassone/Bots-PPI.svg?style=for-the-badge
-[license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/Emmatassone/GE-Bots.svg?style=for-the-badge
+[contributors-url]: https://github.com/Emmatassone/GE-Bots/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Emmatassone/GE-Bots.svg?style=for-the-badge
+[forks-url]: https://github.com/Emmatassone/GE-Bots/network/members
+[stars-shield]: https://img.shields.io/github/stars/Emmatassone/GE-Bots.svg?style=for-the-badge
+[stars-url]: https://github.com/Emmatassone/GE-Bots/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Emmatassone/GE-Bots.svg?style=for-the-badge
+[issues-url]: https://github.com/Emmatassone/GE-Bots/issues
+[license-shield]: https://img.shields.io/github/license/Emmatassone/GE-Bots.svg?style=for-the-badge
+[license-url]: https://github.com/Emmatassone/GE-Bots/blob/master/LICENSE
 [vectorbt-image]: https://vectorbt.dev/assets/logo/header.svg
 [vectorbt-url]: https://vectorbt.dev/
 [riskfolio-image]: https://raw.githubusercontent.com/dcajasn/Riskfolio-Lib/master/docs/source/images/MSV_Frontier.png
