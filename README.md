@@ -183,4 +183,4 @@ A special thanks should be done to
 [vectorbt-image]: https://vectorbt.dev/assets/logo/header.svg
 [vectorbt-url]: https://vectorbt.dev/
 [riskfolio-image]: https://raw.githubusercontent.com/dcajasn/Riskfolio-Lib/master/docs/source/images/MSV_Frontier.png
-[riskfolio-url]: https://raw.githubusercontent.com/dcajasn/Riskfolio-Lib/master/docs/source/images/MSV_Frontier.png
+[riskfolio-url]: https://riskfolio-lib.readthedocs.io/en/latest/
