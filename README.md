@@ -74,8 +74,10 @@ GE-Bots is a project focused on finding market inefficiencies, build strategies 
 
 The bots are build in python, with the help of the following libraries.
 
-* [![vectorbt][vectorbt-image]][vectorbt-url]
-* [![Riskfolio-Lib][riskfolio-image]][riskfolio-url]
+*  Vectorbt
+   [![vectorbt][vectorbt-image]][vectorbt-url]
+*  Riskfolio
+  [![Riskfolio-Lib][riskfolio-image]][riskfolio-url]
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
