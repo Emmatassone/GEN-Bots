@@ -75,7 +75,7 @@ GE-Bots is a project focused on finding market inefficiencies, build strategies 
 The bots are build in python, with the help of the following libraries.
 
 * [![vectorbt][vectorbt-image]][vectorbt-url]
-
+* [![Riskfolio-Lib][riskfolio-image]][riskfolio-url]
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -157,12 +157,9 @@ Project Link: [https://github.com/Emmatassone/Bots-PPI](https://github.com/Emmat
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-A special thanks should be done to the following open-source projects.
+A special thanks should be done to 
 
-* [Choose an Open Source License](https://choosealicense.com)
-* [Img Shields](https://shields.io)
-* [GitHub Pages](https://pages.github.com)
-* [OpenBB Terminal](https://my.openbb.co/app/terminal)
+* PyQuant News 🐍 - [@pyquantnews](https://twitter.com/pyquantnews)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -182,3 +179,5 @@ A special thanks should be done to the following open-source projects.
 [license-url]: https://github.com/Emmatassone/Bots-PPI/blob/master/LICENSE
 [vectorbt-image]: https://vectorbt.dev/assets/logo/header.svg
 [vectorbt-url]: https://vectorbt.dev/
+[riskfolio-image]: https://raw.githubusercontent.com/dcajasn/Riskfolio-Lib/master/docs/source/images/MSV_Frontier.png
+[riskfolio-url]: https://raw.githubusercontent.com/dcajasn/Riskfolio-Lib/master/docs/source/images/MSV_Frontier.png
