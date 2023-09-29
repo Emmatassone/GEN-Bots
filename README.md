@@ -92,10 +92,10 @@ To pick a trading strategy and backtest run the following.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
+Poner todos los paquetes que usamos
 * npm
   ```sh
-  npm install npm@latest -g
+  pip install ...
   ```
 
 <!-- USAGE EXAMPLES -->
