@@ -1,19 +1,9 @@
 import pandas as pd
 import riskfolio as rp
 import warnings
-from datetime import date
-from data_procesing.f_yfinance import FetchYfinance
-from analizer.port_analizer_own import calculate_portfolio_returns
 
 warnings.filterwarnings("ignore")
 pd.options.display.float_format = '{:.4%}'.format
-
-# parameters
-assets = ['JPM', 'MSFT', 'BA', 'KO', 'AAPL', 'TSLA', 'AMZN', 'NVDA']
-train_start = '2019-01-01'
-train_end = '2022-12-30'
-test_start = '2022-12-30'
-test_end = str(date.today())
 
 
 # Building the portfolio object
@@ -47,8 +37,5 @@ class PortfolioOptimizer:
         return w
 
 
-portfolio_w = PortfolioOptimizer().port_optimize(FetchYfinance().train_data(assets, train_start, train_end))
-#portfolio = calculate_portfolio_returns(FetchYfinance().test_data(assets, test_start, test_end), portfolio_w.T)
-print(portfolio_w)
 
 # %%
