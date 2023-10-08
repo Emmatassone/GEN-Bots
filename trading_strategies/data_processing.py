@@ -1,5 +1,6 @@
 from datetime import datetime,timedelta
 import pytz
+import vectorbt as vbt
 
 def load_data(symbol = 'BTC-USD'):
 # Enter your parameters here
