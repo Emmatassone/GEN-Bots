@@ -1,1 +1,8 @@
 
+# Common environment specific directories.
+.venv
+.idea
+.env*
+
+# Cache directories.
+__pycache__
