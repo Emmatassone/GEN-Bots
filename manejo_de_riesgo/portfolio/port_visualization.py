@@ -1,6 +1,4 @@
 import streamlit as st
-import pandas as pd
-from datetime import date
 from main import portfolio_w, report, portfolio
 
 st.set_page_config(

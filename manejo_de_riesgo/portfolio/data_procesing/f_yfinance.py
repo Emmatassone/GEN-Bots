@@ -1,3 +1,4 @@
+import pandas as pd
 import yfinance as yf
 
 
@@ -70,4 +71,28 @@ class YFinanceDataFetcher:
 
         return self.fetch_yfinance_data(assets, _test_start, _test_end)
 
-#%%
+    def get_testing_data_port(self, portfolio, start=None, end=None):
+        """
+        Fetches testing data from Yahoo Finance for a list of assets.
+
+        Args:
+            portfolio (DataFrame): List of asset tickers.
+            start (str, optional): Start date in 'YYYY-MM-DD' format.
+            end (str, optional): End date in 'YYYY-MM-DD' format.
+
+        Returns:
+            pd.DataFrame: DataFrame containing daily returns for testing data.
+        """
+
+        if not isinstance(portfolio, pd.DataFrame):
+            raise TypeError('portfolio must be a DataFrame or Series')
+        _test_start = '2023-01-01'
+        _test_end = '2023-12-31'
+
+        if start:
+            _test_start = start
+        if end:
+            _test_end = end
+        assets = portfolio.index.to_list()
+        return self.fetch_yfinance_data(assets, _test_start, _test_end)
+# %%

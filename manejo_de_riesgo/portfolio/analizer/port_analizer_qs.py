@@ -10,7 +10,6 @@ def get_last_two_values(row):
 
 
 indicators_list = ['Start Period',
-
                    'End Period',
                    'Risk-Free Rate',
                    'Time in Market',
