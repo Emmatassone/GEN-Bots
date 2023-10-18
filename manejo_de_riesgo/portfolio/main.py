@@ -15,8 +15,10 @@ portfolio_w = PortfolioOptimizer().port_optimize(YFinanceDataFetcher()
 
 portfolio = calculate_portfolio_returns(YFinanceDataFetcher()
                                         .get_testing_data(assets, test_start, test_end), portfolio_w.T)
+
 stock = portfolio['Daily Return']
 report = generate_report(stock)
+
 
 if __name__ == "__main__":
     print(report)

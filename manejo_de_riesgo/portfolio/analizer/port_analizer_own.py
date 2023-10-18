@@ -10,3 +10,5 @@ def calculate_portfolio_returns(daily_returns, weights):
         'Cumulative Return': cumulative_return
     })
     return df_returns
+
+#%%
