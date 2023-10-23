@@ -10,83 +10,99 @@ class PortfolioOptimizerTest:
     """
     This class is used to TEST optimize the portfolio using the risk-folio library
     """
-
-    def __init__(self):
-        self.weights_initial_sum = None
-        self.assets = None
-        self.cvar_value = None
-        self.risk_level = None
-
-    risk_level_user = {'Conservative': 1, 'Moderate': 2, 'Aggressive': 3}
-    risk_level_default = 'Moderate'
     method_mu = 'hist'
     method_cov = 'hist'
     model = 'Classic'
     rm = 'CVaR'
-    obj = 'Sharpe'
     hist = True
     rf = 0
     lib = 0
+    OBJ_OPTIONS = {'MinRisk', 'Utility', 'Sharpe', 'MaxRet'}
+    RISK_LEVEL_USER = {'Conservative': 1, 'Moderate': 2, 'Aggressive': 3, 'Very Aggressive': 4}
+    RISK_LEVEL_MAPPING = {
+        1: 'MinRisk',
+        2: 'Utility',
+        3: 'Sharpe',
+        4: 'MaxRet'
+    }
+    RISK_LEVEL_DEFAULT = 'Moderate'
+
+    def __init__(self):
+        self.weights_initial_sum = None
+        self._assets = None
+        self._cvar_value = None
+        self._risk_level = None
+        self._obj = 'Sharpe'
+
+    @property
+    def obj(self):
+        return self._obj
+
+    @property
+    def cvar_value(self):
+        return self._cvar_value
+
+    @property
+    def risk_level(self):
+        return self._risk_level
+
+    @property
+    def assets(self):
+        return self._assets
+
+    @property
+    def weights_initial_sum(self):
+        return self._weights_initial_sum
+
+    @cvar_value.setter
+    def cvar_value(self, cvar_value):
+        self._cvar_value = cvar_value / 252 ** 0.5
+
+    @risk_level.setter
+    def risk_level(self, risk_profile):
+        self._risk_level = self.RISK_LEVEL_USER.get(risk_profile, self.RISK_LEVEL_DEFAULT)
+        self.set_objective_function(self.RISK_LEVEL_MAPPING.get(self._risk_level, self.RISK_LEVEL_DEFAULT))
+
+    @weights_initial_sum.setter
+    def weights_initial_sum(self, value):
+        self._weights_initial_sum = value
+
+    def set_initial_asset(self, assets, weights=None):
+        if not isinstance(assets, (list, tuple)):
+            raise TypeError("The 'assets' parameter must be a list or tuple.")
+
+        if weights is not None and not isinstance(weights, (list, tuple)):
+            raise TypeError("The 'weights' parameter must be a list or tuple.")
+
+        if weights is not None and len(assets) != len(weights):
+            raise ValueError("The lengths of 'assets' and 'weights' must be the same.")
+
+        self._assets = pd.DataFrame({'assets': assets, 'weights': weights})
+
+        weights_initial_sum = self._assets['weights'].sum()
+        self.weights_initial_sum = weights_initial_sum
+        print('Initial weights sum:', weights_initial_sum)
 
     def set_objective_function(self, objective: str):
         """
-        sets the objective function
+        Set the objective function for portfolio optimization.
         :param objective: str
-        :options: MinRisk, MaxRet, Utility, Sharpe
-        :return: None
+            The name of the objective function (e.g., 'MinRisk', 'Utility', 'Sharpe', 'MaxRet').
         """
-        self.obj = objective
-        return f'Objective function set in {self.obj }'
+        if objective in self.OBJ_OPTIONS:
+            self._obj = objective
+        else:
+            raise ValueError(f'Invalid objective function: {objective}')
 
-    def set_risk_level(self, risk_profile: str):
-        """
-        sets the risk level
-        :param risk_profile: str
-        :options: Conservative, Moderate, Aggressive
-        :return: None
-        """
-        self.risk_level = self.risk_level_user[risk_profile]
-        if self.risk_level is not None:
-            if self.risk_level == 1:
-                self.set_objective_function('MinRisk')
-        return f'Risk level set in {risk_profile} and objective function set in {self.obj}'
-
-    def set_initial_asset(self, assets, weights=None):
-        """
-        sets the initial assets and weights
-        :param assets: list of assets
-        :param weights: list of weights
-        :return: None
-        """
-
-        if not isinstance(assets, (list, tuple)):
-            raise TypeError("assets must be a list or tuple")
-
-        if weights is not None and not isinstance(weights, (list, tuple)):
-            raise TypeError('tuple or list expected for weights')
-
-        if len(assets) != len(weights) if weights is not None else False:
-            raise ValueError("length of assets and weights must be the same")
-
-        self.assets = pd.DataFrame({'assets': assets, 'weights': weights})
-        weights_initial_sum = self.assets['weights'].sum()
-        self.weights_initial_sum = weights_initial_sum
-        print('Initial weights sum: ', weights_initial_sum)
-
-    def set_initial_cvar(self, cvar: int):
-        cvar_value = cvar / 252 ** 0.5
-        self.cvar_value = cvar_value
-        return f'Cvar set in :{cvar}'
-
-    # port.assets_stats(method_mu=self.method_mu, method_cov=self.method_cov, d=0.94)
     def port_optimize(self, returns_train):
-        port = rp.Portfolio(returns=returns_train)
+        portfolio = rp.Portfolio(returns=returns_train)
+        portfolio.assets_stats(method_mu=self.method_mu, method_cov=self.method_cov, d=0.94)
         if self.cvar_value is not None:
             try:
-                port.upperCVaR = self.cvar_value
+                portfolio.upperCVaR = self.cvar_value
             except Exception as e:
                 print(e)
-        w = port.optimization(
+        weights_optimized = portfolio.optimization(
             model=self.model,
             rm=self.rm,
             obj=self.obj,
@@ -95,10 +111,10 @@ class PortfolioOptimizerTest:
             hist=True)
         if self.weights_initial_sum is not None:
             try:
-                w['weights'] = w['weights'] * (1 - self.weights_initial_sum)
+                weights_optimized['weights'] = weights_optimized['weights'] * (1 - self.weights_initial_sum)
                 self.assets.set_index('assets', inplace=True)
-                w = pd.concat([self.assets, w], axis=0)
+                weights_optimized = pd.concat([self.assets, weights_optimized], axis=0)
             except Exception as e:
                 print(e)
-        return w
-    # %%
+
+        return weights_optimized

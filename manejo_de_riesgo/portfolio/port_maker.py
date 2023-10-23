@@ -10,19 +10,20 @@ train_start = '2019-01-01'
 train_end = '2022-12-30'
 test_start = '2022-12-30'
 test_end = str(date.today())
+#    risk_level_user = {'Conservative': 1, 'Moderate': 2, 'Aggressive': 3, 'Very Aggressive': 4}
 
-portfolio_w = PortfolioOptimizer().port_optimize(YFinanceDataFetcher()
-                                                 .get_training_data(assets, train_start, train_end))
+portfolio_w = PortfolioOptimizerTest()
+risk_user = input('Enter your risk profile: ')
+print(portfolio_w.set_risk_level(risk_user))
+portfolio_w = portfolio_w.port_optimize(YFinanceDataFetcher().get_training_data(assets, train_start, train_end))
 
+
+
+print(portfolio_w.T)
 portfolio = calculate_portfolio_returns(YFinanceDataFetcher()
                                         .get_testing_data(assets, test_start, test_end), portfolio_w.T)
 
 stock = portfolio['Daily Return']
 report = generate_report(stock)
-
-if __name__ == "__main__":
-    print(report)
-
-#%%
-
+print(report)
 #%%
