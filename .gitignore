@@ -1,7 +1,9 @@
 # Common environment specific directories.
 .venv
 .idea
-.env*
+.env
 
 # Cache directories.
 __pycache__
+env/
+testfolder
