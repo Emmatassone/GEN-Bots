@@ -1,3 +1,5 @@
+Key = str
+
 """
 NET_INCOME (np.float64), equivalent to the XBRL US GAAP taxonomy concept us-gaap:NetIncomeLoss, defined as the
 "portion of profit or loss for the period, net of income taxes, which is attributable to the parent."
@@ -31,3 +33,10 @@ STOCKHOLDER_EQUITY = 'stockholder_equity'
 TICKER_SYMBOL (string).
 """
 TICKER_SYMBOL = 'ticker_symbol'
+
+"""
+TOTAL_ASSETS (np.float64), equivalent to the XBRL US GAAP taxonomy concept us-gaap:Assets, defined as the "sum of the
+carrying amounts as of the balance sheet date of all assets that are recognized. Assets are probable future economic
+benefits obtained or controlled by an entity as a result of past transactions or events."
+"""
+TOTAL_ASSETS = 'total_assets'
