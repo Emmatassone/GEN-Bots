@@ -6,4 +6,5 @@
 
 # Cache directories.
 __pycache__
-testfolder
+.testfolder
+/testfolder

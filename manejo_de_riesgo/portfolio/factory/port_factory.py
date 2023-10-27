@@ -6,17 +6,20 @@ warnings.filterwarnings("ignore")
 pd.options.display.float_format = '{:.4%}'.format
 
 
+def rm():
+    return self._rm
+
+
 class PortfolioOptimizerTest:
     """
     This class is used to TEST optimize the portfolio using the risk-folio library
     """
     method_mu = 'hist'
     method_cov = 'hist'
-    model = 'Classic'
-    rm = 'CVaR'
     hist = True
     rf = 0
     lib = 0
+    MODEL_OPTIONS = {'Classic', 'BL', 'FM', 'BLFM'}
     OBJ_OPTIONS = {'MinRisk', 'Utility', 'Sharpe', 'MaxRet'}
     RISK_LEVEL_USER = {'Conservative': 1, 'Moderate': 2, 'Aggressive': 3, 'Very Aggressive': 4}
     RISK_LEVEL_MAPPING = {
@@ -33,6 +36,12 @@ class PortfolioOptimizerTest:
         self._cvar_value = None
         self._risk_level = None
         self._obj = 'Sharpe'
+        self._model = 'Classic'
+        self._rm = 'MV'
+
+    @property
+    def model(self):
+        return self._model
 
     @property
     def obj(self):
@@ -104,7 +113,7 @@ class PortfolioOptimizerTest:
                 print(e)
         weights_optimized = portfolio.optimization(
             model=self.model,
-            rm=self.rm,
+            rm=rm,
             obj=self.obj,
             rf=self.rf,
             l=self.lib,
