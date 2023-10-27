@@ -6,10 +6,6 @@ warnings.filterwarnings("ignore")
 pd.options.display.float_format = '{:.4%}'.format
 
 
-def rm():
-    return self._rm
-
-
 class PortfolioOptimizerTest:
     """
     This class is used to TEST optimize the portfolio using the risk-folio library
@@ -20,15 +16,19 @@ class PortfolioOptimizerTest:
     rf = 0
     lib = 0
     MODEL_OPTIONS = {'Classic', 'BL', 'FM', 'BLFM'}
-    OBJ_OPTIONS = {'MinRisk', 'Utility', 'Sharpe', 'MaxRet'}
+    OBJ_OPTIONS = {'MinRisk', 'Sharpe', 'Utility', 'MaxRet'}
     RISK_LEVEL_USER = {'Conservative': 1, 'Moderate': 2, 'Aggressive': 3, 'Very Aggressive': 4}
     RISK_LEVEL_MAPPING = {
         1: 'MinRisk',
-        2: 'Utility',
-        3: 'Sharpe',
+        2: 'Sharpe',
+        3: 'Utility',
         4: 'MaxRet'
     }
     RISK_LEVEL_DEFAULT = 'Moderate'
+    codependency = 'pearson'
+    linkage = 'single'  # Linkage method used to build clusters
+    max_k = 10  # Max number of clusters used in two different gap statistics, only for the HERC model
+    leaf_order = True
 
     def __init__(self):
         self.weights_initial_sum = None
@@ -38,6 +38,15 @@ class PortfolioOptimizerTest:
         self._obj = 'Sharpe'
         self._model = 'Classic'
         self._rm = 'MV'
+        self._hrp = False
+
+    @property
+    def hrp(self):
+        return self._hrp
+
+    @property
+    def rm(self):
+        return self._rm
 
     @property
     def model(self):
@@ -76,6 +85,10 @@ class PortfolioOptimizerTest:
     def weights_initial_sum(self, value):
         self._weights_initial_sum = value
 
+    @hrp.setter
+    def hrp(self, value):
+        self._hrp = value
+
     def set_initial_asset(self, assets, weights=None):
         if not isinstance(assets, (list, tuple)):
             raise TypeError("The 'assets' parameter must be a list or tuple.")
@@ -104,20 +117,32 @@ class PortfolioOptimizerTest:
             raise ValueError(f'Invalid objective function: {objective}')
 
     def port_optimize(self, returns_train):
-        portfolio = rp.Portfolio(returns=returns_train)
-        portfolio.assets_stats(method_mu=self.method_mu, method_cov=self.method_cov, d=0.94)
-        if self.cvar_value is not None:
-            try:
-                portfolio.upperCVaR = self.cvar_value
-            except Exception as e:
-                print(e)
-        weights_optimized = portfolio.optimization(
-            model=self.model,
-            rm=rm,
-            obj=self.obj,
-            rf=self.rf,
-            l=self.lib,
-            hist=True)
+        if self.hrp is True:
+            port = rp.HCPortfolio(returns=returns_train)
+            weights_optimized = port.optimization(
+                model='HRP',
+                codependence=self.codependency,
+                rm=self.rm,
+                rf=self.rf,
+                linkage=self.linkage,
+                max_k=self.max_k,
+                leaf_order=self.leaf_order
+            )
+        else:
+            portfolio = rp.Portfolio(returns=returns_train)
+            portfolio.assets_stats(method_mu=self.method_mu, method_cov=self.method_cov, d=0.94)
+            if self.cvar_value is not None:
+                try:
+                    portfolio.upperCVaR = self.cvar_value
+                except Exception as e:
+                    print(e)
+            weights_optimized = portfolio.optimization(
+                model=self.model,
+                rm=self.rm,
+                obj=self.obj,
+                rf=self.rf,
+                l=self.lib,
+                hist=True)
         if self.weights_initial_sum is not None:
             try:
                 weights_optimized['weights'] = weights_optimized['weights'] * (1 - self.weights_initial_sum)
@@ -125,5 +150,5 @@ class PortfolioOptimizerTest:
                 weights_optimized = pd.concat([self.assets, weights_optimized], axis=0)
             except Exception as e:
                 print(e)
-
+        print(self.model, self.obj, self.rm, self.hrp)
         return weights_optimized
