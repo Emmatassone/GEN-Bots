@@ -4,6 +4,8 @@ import numpy as np
 class Threshold:
 
     def __init__(self, buy: float, sell: float):
+        self.strategy_name='Threshold'
+        
         self.__buy = buy
         self.__sell = sell
 
@@ -16,3 +18,13 @@ class Threshold:
         exits[signal > self.__sell] = True
         # Return both.
         return entries, exits
+    
+    def get_strategy_params(self):
+        params={'buy_signal':self.__buy,
+                'sell_signal':self.__sell}
+        return params
+    
+    def change_params(self,buy,sell):
+        self.__buy = buy
+        self.__sell = sell
+        return

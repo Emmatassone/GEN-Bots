@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
-from ge.trading.strategy import DMAC
-from ge.data import load_data
+from trading.strategy import DMAC
+from data import load_data
 
 
 ohlcv_wbuf = load_data()

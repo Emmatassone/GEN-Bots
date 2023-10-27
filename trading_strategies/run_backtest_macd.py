@@ -3,13 +3,11 @@ import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
-from ge.trading.strategy import MACD
-from ge.data import load_data
+from trading.strategy import MACD
+from data import load_data
 
-# Agregué estos imports para graficar de otra manera el resultado
-import plotly.graph_objs as go
+import plotly.graph_objects as go
 import plotly.io as pio
-
 
 ohlcv_wbuf = load_data()
 ohlcv_wbuf = ohlcv_wbuf.astype(np.float64)
@@ -28,7 +26,7 @@ fig = df['entry'].vbt.signals.plot_as_entry_markers(ohlcv_wbuf['Close'], fig=fig
 fig = df['exit'].vbt.signals.plot_as_exit_markers(ohlcv_wbuf['Close'], fig=fig)
 
 #fig.show() -> lo comenté xq no me funcionaba, lo muestro abajo
-pio.write_html(fig, file='chart_signals.html', auto_open=True)
+pio.write_image(fig, 'chart_signals.png', format='png')
 
 # Comparamos porcentajes de retorno de las estrategias
 # buy&hold
@@ -43,4 +41,4 @@ pf = vbt.Portfolio.from_signals(df['Close'], df['entry'], df['exit'])
 
 fig = pf.value().vbt.plot(trace_kwargs=dict(name='MACD 12/26/9'))
 hold_pf.value().vbt.plot(trace_kwargs=dict(name='Hold'), fig=fig)#.show()  -> lo comenté xq no me funcionaba, lo muestro abajo
-pio.write_html(fig, file='chart_compara.html', auto_open=True)
+pio.write_image(fig, 'porfolio_evolution.png', format='png')
