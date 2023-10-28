@@ -1,7 +1,28 @@
 Key = str
 
 """
-NET_INCOME (np.float64), equivalent to the XBRL US GAAP taxonomy concept us-gaap:NetIncomeLoss, defined as the
+DEBT_AND_LEASE_CURRENT (np.float64), equivalent to the XBRL US GAAP 2023 taxonomy concept us-gaap:DebtCurrent,
+defined as the "amount of debt and lease obligation, classified as current." In Yahoo Finance it is specified as
+"Current Debt And Capital Lease Obligation"
+"""
+DEBT_AND_LEASE_CURRENT = 'debt_and_lease_current'
+
+"""
+DEBT_AND_LEASE_NON_CURRENT (np.float64). Specified in Yahoo Finance as "Long Term Debt And Capital Lease Obligation"
+Includes DEBT_NON_CURRENT in addition to capital lease obligations.
+"""
+DEBT_AND_LEASE_NON_CURRENT = 'debt_and_lease_non_current'
+
+"""
+DEBT_NON_CURRENT (np.float64), equivalent to the XBRL US GAAP 2023 taxonomy concept us-gaap:LongTermDebtNoncurrent,
+defined as the "amount, after deduction of unamortized premium (discount) and debt issuance cost, of long-term debt 
+classified as noncurrent. Excludes lease obligation." The standard label is "Long-Term Debt, Excluding Current 
+Maturities." In Yahoo Finance it is given as "Long Term Debt," below "Long Term Debt and Capital Lease Obligations."
+"""
+DEBT_NON_CURRENT = 'debt_non_current'
+
+"""
+NET_INCOME (np.float64), equivalent to the XBRL US GAAP 2023 taxonomy concept us-gaap:NetIncomeLoss, defined as the
 "portion of profit or loss for the period, net of income taxes, which is attributable to the parent."
 """
 NET_INCOME = 'net_income'
@@ -25,7 +46,7 @@ RETURN_ON_EQUITY = 'return_on_equity'
 """
 STOCKHOLDER_EQUITY (np.float64), equivalent to the XBRL US GAAP taxonomy concept us-gaap:StockholdersEquity, defined
 as the "amount of equity (deficit) attributable to parent. Excludes temporary equity and equity attributable  to
-noncontrolling interest."
+noncontrolling interest." In Yahoo Finance it is specified as "Common Stock Equity."
 """
 STOCKHOLDER_EQUITY = 'stockholder_equity'
 

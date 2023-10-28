@@ -10,6 +10,7 @@ def assets_to_equity(
 ) -> go.Figure:
     # Filter for the rows for the specific symbol.
     company_rows = data[data[concept.TICKER_SYMBOL] == ticker_symbol]
+    company_rows = company_rows.sort_values(by=concept.PERIOD_START, ascending=True)
     # Extract the data that we need.
     t = company_rows[concept.PERIOD_START].dt.strftime(datetime_format)
     a = company_rows[concept.TOTAL_ASSETS]
