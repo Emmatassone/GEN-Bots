@@ -25,7 +25,7 @@ def fetch_balance_sheet(ticker_symbol: str, frequency: Frequency = FREQ_YEARLY) 
     df.insert(0, concept.TICKER_SYMBOL, ticker_symbol)
     # Set time.
     df.reset_index(inplace=True)
-    df.rename(columns={'index': concept.PERIOD_START}, inplace=True)
-    df.sort_values(by=concept.PERIOD_START, ascending=True, inplace=True)
+    df.rename(columns={'index': concept.PERIOD_END}, inplace=True)
+    df.sort_values(by=concept.PERIOD_END, ascending=True, inplace=True)
     #
     return df
