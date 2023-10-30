@@ -1,8 +1,9 @@
 from datetime import date
 from data_procesing.f_yfinance import YFinanceDataFetcher
-from factory.port_factory import PortfolioOptimizer
+from factory.port_hc_factory import PortfolioOptimizer
 from analizer.port_analizer_own import calculate_portfolio_returns
 from analizer.port_analizer_qs import generate_report
+from factory.port_factory import PortfolioOptimizerTest
 
 assets = ['JPM', 'MSFT', 'BA', 'KO', 'AAPL', 'TSLA', 'AMZN', 'NVDA']
 train_start = '2019-01-01'
@@ -19,6 +20,9 @@ portfolio = calculate_portfolio_returns(YFinanceDataFetcher()
 stock = portfolio['Daily Return']
 report = generate_report(stock)
 
-
 if __name__ == "__main__":
     print(report)
+
+#%%
+
+#%%
