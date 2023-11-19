@@ -12,6 +12,13 @@ class MACD:
 
     
     def entries_and_exits(self, signal: np.ndarray):
+        """
+        Generate entry and exit signals based on MACD indicator.
+
+        :param signal: Numpy array with price data.
+        :return: Tuple of entry and exit signals as numpy arrays.
+        """
+            
         macd = vbt.MACD.run(signal, fast_window=self.__fast_window, slow_window=self.__slow_window, signal_window=self.__signal_window)
         
         entries = macd.macd_crossed_above (macd.signal) 
@@ -19,11 +26,15 @@ class MACD:
         return entries.values, exits.values
     
     def get_strategy_params(self):
-        params={'fast_ma':self.__fast,
-                'slow_ma':self.__slow}
+        params = {
+            'fast_window': self.__fast_window,
+            'slow_window': self.__slow_window,
+            'signal_window': self.__signal_window
+        }
         return params
-    
-    def change_params(self,slow_ma,fast_ma):
-        self.__fast = fast_ma
-        self.__slow = slow_ma
+
+    def change_params(self, fast_window, slow_window, signal_window):
+        self.__fast_window = fast_window
+        self.__slow_window = slow_window
+        self.__signal_window = signal_window
         return

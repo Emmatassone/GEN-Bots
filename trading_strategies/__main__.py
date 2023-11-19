@@ -6,7 +6,7 @@ def main():
     ohlcv= load_data()
     ohlcv= ohlcv.astype(np.float64)
     
-    strategies = ['MACD', 'DMAC', 'Threshold']  # List of available strategies
+    strategies = ['MACD', 'DMAC', 'Threshold', 'RSI', 'Combined', 'Candles']  # List of available strategies
 
     print("Choose a trading strategy:")
     for i, strategy in enumerate(strategies, start=1):
