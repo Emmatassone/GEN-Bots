@@ -1,5 +1,5 @@
 import streamlit as st
-from main import portfolio_w, report, portfolio
+from _2main import portfolio_w, report, portfolio
 
 st.set_page_config(
     page_title="Portfolio Dashboard",
