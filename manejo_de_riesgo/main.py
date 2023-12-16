@@ -1,14 +1,15 @@
 from datetime import date
-
+from typing import List
 
 from portfolio.data_procesing.f_yfinance import YFinanceDataFetcher
 from portfolio.factory.port_hc_factory import PortfolioOptimizer
 from portfolio.analizer.port_analizer_own import calculate_portfolio_returns
 from portfolio.analizer.port_analizer_qs import generate_report
-from models import PortfolioUpdate
+from models import PortfolioUpdate, PortfolioResponse, PortfolioItem
 from fastapi import FastAPI, HTTPException
 from exception import (YFinanceDataFetchError, PortfolioOptimizationError, TestingDataFetchError,
                        PortfolioReturnsCalculationError)
+
 app = FastAPI()
 
 
@@ -16,8 +17,9 @@ app = FastAPI()
 def read_root():
     return 'Welcome to the portfolio API!'
 
-#hola
-@app.put("/portfolio/update")
+
+# hola
+@app.put("/portfolio/update", response_model=PortfolioResponse)
 def update_portfolio(update_data: PortfolioUpdate):
     assets = update_data.assets
     train_start = update_data.train_start
@@ -29,6 +31,7 @@ def update_portfolio(update_data: PortfolioUpdate):
         stock = Portfolio(assets, train_start, train_end, test_start, test_end).update_portfolio()
         report = generate_report(stock)
         return report
+
     except YFinanceDataFetchError as e:
         raise HTTPException(status_code=500, detail=f'Error fetching data: {str(e)}')
 

@@ -26,3 +26,11 @@ try:
 
 except Exception as e:
     print(f'Error en la petición: {str(e)}')
+
+{
+    "assets": ["JPM", "MSFT", "BA", "KO", "AAPL", "TSLA", "AMZN", "NVDA"],
+    "train_start": "2019-01-01",
+    "train_end": "2022-12-30",
+    "test_start": "2022-12-30",
+    "test_end": "2023-12-08"
+}

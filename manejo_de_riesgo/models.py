@@ -34,19 +34,19 @@ class PortfolioItem(BaseModel):
     OutlierWinRatio: str
     OutlierLossRatio: str
     MTD: str
-    _3M: str
-    _6M: str
+    r3M: str
+    r6M: str
     YTD: str
-    _1Y: str
-    _3Yann: str
-    _5Yann: str
-    _10Yann: str
+    r1Y: str
+    r3Yann: str
+    r5Yann: str
+    r10Yann: str
     Alltimeann: str
     AvgDrawdown: str
     AvgDrawdownDays: str
     RecoveryFactor: str
-    UlcerIndex: str
-    SerenityIndex: str
+    Ulcer_Index: str
+    Serenity_Index: str
 
 
 class PortfolioResponse(BaseModel):
