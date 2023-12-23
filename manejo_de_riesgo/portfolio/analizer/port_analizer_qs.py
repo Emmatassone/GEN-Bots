@@ -65,20 +65,22 @@ def generate_report(daily_returns):
     except pd.errors.ParserError:
         print("ParserError")
         df = None
+    try:
+        if df is not None:
+            result = df.apply(get_last_two_values, axis=1)
 
-    if df is not None:
-        result = df.apply(get_last_two_values, axis=1)
+            list_indicators = pd.DataFrame(indicators_list)
 
-        list_indicators = pd.DataFrame(indicators_list)
+            df_r = result.drop([0, 1])
+            df_r = df_r.reset_index(drop=True)
 
-        df_r = result.drop([0, 1])
-        df_r = df_r.reset_index(drop=True)
-
-        report_df = pd.concat([list_indicators, df_r], axis=1)
-        report_df.columns = ['Indicator', 'SPY', 'Portfolio']
-        report_df = report_df.reset_index(drop=True)
-        report_df = report_df.set_index('Indicator')
-        return report_df
+            report_df = pd.concat([list_indicators, df_r], axis=1)
+            report_df.columns = ['Indicator', 'SPY', 'Portfolio']
+            report_df = report_df.reset_index(drop=True)
+            report_df = report_df.set_index('Indicator')
+            return report_df
+    except Exception as e:
+        return e
 
 # %%
 

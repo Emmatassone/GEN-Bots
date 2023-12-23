@@ -30,6 +30,7 @@ def update_portfolio(update_data: PortfolioUpdate):
     try:
         stock = Portfolio(assets, train_start, train_end, test_start, test_end).update_portfolio()
         report = generate_report(stock)
+        print(report)
         return report
 
     except YFinanceDataFetchError as e:
@@ -37,12 +38,14 @@ def update_portfolio(update_data: PortfolioUpdate):
 
 
 class Portfolio:
+
     def __init__(self, assets, train_start, train_end, test_start, test_end):
         self.assets = assets
         self.train_start = train_start
         self.train_end = train_end
         self.test_start = test_start
         self.test_end = test_end
+        self.portfolio_returns = None
 
     def update_portfolio(self):
         try:
@@ -50,14 +53,9 @@ class Portfolio:
             portfolio_w = PortfolioOptimizer().port_optimize(training_data)
             testing_data = YFinanceDataFetcher().get_testing_data(self.assets, self.test_start, self.test_end)
             portfolio_returns = calculate_portfolio_returns(testing_data, portfolio_w.T)
-            return portfolio_returns['Daily Return']
-        except YFinanceDataFetchError as yfinance_error:
-            return f'Error fetching financial data: {str(yfinance_error)}'
-        except PortfolioOptimizationError as optimization_error:
-            return f'Error in portfolio optimization: {str(optimization_error)}'
-        except TestingDataFetchError as testing_error:
-            return f'Error fetching testing data: {str(testing_error)}'
-        except PortfolioReturnsCalculationError as returns_error:
-            return f'Error calculating portfolio returns: {str(returns_error)}'
-        except Exception as other_error:
-            return f'Unexpected error: {str(other_error)}'
+
+        except Exception as e:
+            raise e
+
+        return portfolio_returns['Daily Return']
+

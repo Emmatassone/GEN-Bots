@@ -13,13 +13,10 @@ request_data = {
 # URL del endpoint
 url = "https://tu-servidor.com/tu-endpoint"
 
-# Realizar la petición
 try:
     response = requests.post(url, json=request_data)
 
-    # Verificar el código de estado de la respuesta
     if response.status_code == 200:
-        # La petición fue exitosa, puedes manejar la respuesta aquí
         print(response.json())
     else:
         print(f'Error en la petición. Código de estado: {response.status_code}')
