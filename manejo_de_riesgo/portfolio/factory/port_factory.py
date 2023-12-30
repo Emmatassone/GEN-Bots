@@ -9,6 +9,9 @@ pd.options.display.float_format = '{:.4%}'.format
 class PortfolioOptimizerTest:
     """
     This class is used to TEST optimize the portfolio using the risk-folio library
+
+    ->  return weights_optimized
+
     """
     method_mu = 'hist'
     method_cov = 'hist'
@@ -78,6 +81,10 @@ class PortfolioOptimizerTest:
 
     @risk_level.setter
     def risk_level(self, risk_profile):
+        """
+            RISK_LEVEL_USER = {'Conservative': 'Moderate':  'Aggressive': 'Very Aggressive':}
+
+        """
         self._risk_level = self.RISK_LEVEL_USER.get(risk_profile, self.RISK_LEVEL_DEFAULT)
         self.set_objective_function(self.RISK_LEVEL_MAPPING.get(self._risk_level, self.RISK_LEVEL_DEFAULT))
 
