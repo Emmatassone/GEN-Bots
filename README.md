@@ -63,7 +63,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-GE-Bots is a project focused on finding market inefficiencies, build strategies to outperform the market and bots that are helpful for traders on a daily basis.
+GEN-Bots is a project focused on finding market inefficiencies, build strategies to outperform the market and bots that are helpful for traders on a daily basis.
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
