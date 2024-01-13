@@ -23,7 +23,7 @@
     <img src="images/bots-ppi-logo.png" alt="Logo" width="300" height="300">
   </a>
 
-  <h3 align="center">GE-Bots</h3>
+  <h3 align="center">GEN-Bots</h3>
 
   <p align="center">
     Automated trading strategies, risk analysis, market analysis, etc
