@@ -10,4 +10,4 @@
 # bid_AAPL_48 = 21142.0
 # ask_AAPL_CI = 20786.5
 
-# Definimo la función acá
+# Definimos la función acá
