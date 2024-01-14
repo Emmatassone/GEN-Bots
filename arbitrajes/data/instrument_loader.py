@@ -11,3 +11,5 @@
 # ask_AAPL_CI = 20786.5
 
 # Definimos la función acá
+
+# NO OLVIDAR DE LEER EL VOLUMEN TAMBIEN!
