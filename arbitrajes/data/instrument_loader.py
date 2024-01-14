@@ -10,6 +10,11 @@
 # bid_AAPL_48 = 21142.0
 # ask_AAPL_CI = 20786.5
 
-# Definimos la función acá
+def load_prices():
+    bid_AAPL_48 = 21142.0
+    ask_AAPL_CI = 20786.5
+    volume_CI = 70666776
+    return bid_AAPL_48, ask_AAPL_CI, volume_CI
 
-# NO OLVIDAR DE LEER EL VOLUMEN TAMBIEN!
+
+# NO OLVIDAR DE LEER EL VOLUMEN en CI TAMBIEN!
