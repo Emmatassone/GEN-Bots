@@ -9,42 +9,43 @@ def get_last_two_values(row):
     return pd.Series(values, index=[0, 1])
 
 
-indicators_list = ['Start Period',
-                   'End Period',
-                   'Risk-Free Rate',
-                   'Time in Market',
-                   'Cumulative Return',
-                   'CAGR%',
-                   'Sharpe',
-                   'Prob. Sharpe Ratio',
-                   'Sortino',
-                   'Sortino/√2',
-                   'Omega',
-                   'Max Drawdown',
-                   'Longest DD Days',
-                   'Gain/Pain Ratio',
-                   'Gain/Pain (1M)',
-                   'Payoff Ratio',
-                   'Profit Factor',
-                   'Common Sense Ratio',
-                   'CPC Index',
-                   'Tail Ratio',
-                   'Outlier Win Ratio',
-                   'Outlier Loss Ratio',
-                   'MTD',
-                   '3M',
-                   '6M',
-                   'YTD',
-                   '1Y',
-                   '3Y (ann.)',
-                   '5Y (ann.)',
-                   '10Y (ann.)',
-                   'All-time (ann.)',
-                   'Avg. Drawdown',
-                   'Avg. Drawdown Days',
-                   'Recovery Factor',
-                   'Ulcer Index',
-                   'Serenity Index']
+indicators_list = [
+    "StartPeriod",
+    "EndPeriod",
+    "RiskFreeRate",
+    "TimeInMarket",
+    "CumulativeReturn",
+    "CAGRPercentage",
+    "Sharpe",
+    "ProbSharpeRatio",
+    "Sortino",
+    "SortinoSquareRoot2",
+    "Omega",
+    "MaxDrawdown",
+    "LongestDDDays",
+    "GainPainRatio",
+    "GainPain1M",
+    "PayoffRatio",
+    "ProfitFactor",
+    "CommonSenseRatio",
+    "CPCIndex",
+    "TailRatio",
+    "OutlierWinRatio",
+    "OutlierLossRatio",
+    "MTD",
+    "r3M",
+    "r6M",
+    "YTD",
+    "r1Y",
+    "r3Yann",
+    "r5Yann",
+    "r10Yann",
+    "Alltimeann",
+    "AvgDrawdown",
+    "AvgDrawdownDays",
+    "RecoveryFactor",
+    "Ulcer_Index",
+    "Serenity_Index"]
 
 
 def generate_report(daily_returns):
@@ -64,21 +65,23 @@ def generate_report(daily_returns):
     except pd.errors.ParserError:
         print("ParserError")
         df = None
+    try:
+        if df is not None:
+            result = df.apply(get_last_two_values, axis=1)
 
-    if df is not None:
-        result = df.apply(get_last_two_values, axis=1)
+            list_indicators = pd.DataFrame(indicators_list)
 
-        list_indicators = pd.DataFrame(indicators_list)
+            df_r = result.drop([0, 1])
+            df_r = df_r.reset_index(drop=True)
 
-        df_r = result.drop([0, 1])
-        df_r = df_r.reset_index(drop=True)
-
-        report_df = pd.concat([list_indicators, df_r], axis=1)
-        report_df.columns = ['Indicator', 'SPY', 'Portfolio']
-        report_df = report_df.reset_index(drop=True)
-        report_df = report_df.set_index('Indicator')
-        return report_df
+            report_df = pd.concat([list_indicators, df_r], axis=1)
+            report_df.columns = ['Indicator', 'SPY', 'Portfolio']
+            report_df = report_df.reset_index(drop=True)
+            report_df = report_df.set_index('Indicator')
+            return report_df
+    except Exception as e:
+        return e
 
 # %%
 
-#%%
+# %%

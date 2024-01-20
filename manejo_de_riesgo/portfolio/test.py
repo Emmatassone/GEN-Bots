@@ -17,7 +17,7 @@ class TestPortfolioOptimization(unittest.TestCase):
 
     def test_optimize_portfolio_risk(self):
         portfolio_w = PortfolioOptimizerTest()
-        portfolio_w.risk_level = 'Moderate'
+        portfolio_w.risk_level = 'Conservative'
         portfolio_w.cvar_value = 0.8
         training_data = YFinanceDataFetcher().get_training_data(self.assets, self.train_start, self.train_end)
         portfolio_w = portfolio_w.port_optimize(training_data)
@@ -33,5 +33,3 @@ class TestPortfolioOptimization(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-#%%
