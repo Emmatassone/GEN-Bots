@@ -4,6 +4,7 @@ Created on Sun Jan  7 17:49:22 2024
 
 @author: Alejandro
 """
+import pandas as pd
 
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import object_session, DeclarativeBase
@@ -14,7 +15,7 @@ from connections.database import db_conn
 class Query:
     
     @staticmethod
-    def build(session:db_conn.Session, tables:list[DeclarativeBase], filters:dict[[str, callable], dict]):
+    def build(session:db_conn.Session, tables:list[DeclarativeBase], filters:dict[[str, callable], dict]=None):
         """ Recibe como parametros:
             - session: es la sesion que se va a usar para consultar (tipo: Session).
             - tables:  es un lista de las tablas (ya mapeadas en db_map) sobre las que se van a hacer
@@ -25,6 +26,9 @@ class Query:
               diccionario (con el key como atributo de la tabla y como value el valor buscado para
               ese atributo, y solo 1 valor, no una lista a menos que es lo que se busque).
         """
+        
+        if filters is None or len(filters) == 0 or all(v is None for v in filters.values()): 
+            return session.query(tables[0])  # retorna el query con todos los registros de la tabla
         querys = {}
         for fk, fv in filters.items():
             if fv is not None:
@@ -76,16 +80,26 @@ def get(session, results=0, *args, **kwargs):  # SELECT
     return getattr(qry, results_map.get(results))()
 
 
-def put(session, obj, key, value):
+def put(session, obj, key, value, return_:str=None):
     if   object_session(obj) is None: session.add(obj)
     elif object_session(obj) is not session: session = object_session(obj)
     setattr(obj, key, value)    
     session.commit()
-    return obj  #.primary_key   ## ???
+    return obj if return_ is None else getattr(obj, return_)()
 
+def set_update(session, obj):
+    if   object_session(obj) is None: session.add(obj)
+    elif object_session(obj) is not session: session = object_session(obj)
+    session.commit()
+    return obj.key()
 
+def table_to_df(session, table_name:str, index_col:[str,list[str]]=None):
+    return pd.read_sql_table(table_name=table_name, con=session.bind, index_col=index_col)
+    
+
+methods = {f.__name__: f for f in [get, put, set_update, table_to_df]}
 def query(session=None, method=None, *args, **kwargs):  # Nombre alternativo para la función: frame.
-    if isinstance(method, str): method = {'get': get, 'put': put}.get(method)
+    if isinstance(method, str): method = methods.get(method)
     try: 
         if session is not None: return method(session, *args, **kwargs)  # No cierra la sesion
         with db_conn.Session() as sess:  # Cierra la sesion

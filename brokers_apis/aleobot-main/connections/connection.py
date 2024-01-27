@@ -5,9 +5,9 @@ Created on Wed Sep 13 21:24:00 2023
 @author: Alejandro
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import traceback
 
-from tools.variables_with_lock import Object_with_Lock
-
+from tools.variables_with_lock import Object_with_Lock, Dict_with_Lock, List_with_Lock
 
 # Con las siguientes líneas importo directamente la clase en lugar del modulo para poder instanciarlo directamente.
 from connections.pyRofex.pyRofex_connection import pyR,      Order as Order_pyR
@@ -28,7 +28,9 @@ class Connections:
     def __init__(self, accounts:list=[]):  
         """  El parámetro accounts es una lista con diccionarios en los que cada uno puede contener: module(str), 
         broker_id, nroComitente, dni o credentials (todos opcionales porque puede ser que reciba uno u otro dato).  """
-        self.conns = Object_with_Lock(obj={})  # El objeto de conns va a ser un diccionarios con (broker_id, nroComitente, module_str) como clave y con la instancia de conexión como valor.
+        self.conns = Dict_with_Lock() # conns va a ser un objeto del tipo Dict_with_Lock que va a contener como clave el conn_id y
+                                      # como valor un objeto del tipo Object_with_Lock con la instancia de conexión como objeto.
+        self.logs = List_with_Lock()
         self.add_connections(accounts)
         self.TPE_for_sending_orders = ThreadPoolExecutor(max_workers=32)
                 
@@ -40,25 +42,33 @@ class Connections:
                 try: 
                     c = future.result()
                     if isinstance(c, Broker_Connection):
-                        with self.conns as conns:  
-                            conns[c.credentials.get('broker_id'), c.nroComitente, type(c).__name__] = c
-                    else: print(' Durante una conexión se produjo un error no identificado. {c}') 
+                        self.conns[c.credentials.get('conn_id')] = Object_with_Lock(c)  # Dict_with_Lock self.conns ya está protegido contra bloqueos en este método.
+                    elif c is not None: print(' Durante una conexión se produjo un error no identificado. Retorno future: {}'.format(c)) 
                 except Exception as e:
-                    print(' Durante una conexión se produjo la siguiente excepción: {} {}'.format(type(e), str(e)))
+                    print('\n Durante una conexión se produjo la siguiente excepción: \n {} {}'.format(type(e), str(e)))
+                    self.logs += [traceback.format_exc()]  # traceback.print_exc()
             
             
     def connect(self, account:dict):
         """ La lógica en esta función hace primar el valor de module sobre el el resto de las opciones. """
         
-        if type(account) is not dict:
+        if not isinstance(account, dict):
             if account is not None: raise Exception(' El tipo de datos account es incorrecto: {}'.format(type(account)))
-            # Si account is None la ejecución va a continuar y va a conectarse con la primer cuenta que obtenga con get_credentials
-            
-        elif 'module' in account.keys(): return Connections.modules[account.get('module')](account=account)
+            else: account = dict(module=list(Connections.modules)[0])  # Si account is None la ejecución va a continuar y va a conectarse con la primer cuenta que obtenga con el primer modulo de Credentials.modules
         
         credentials = db_query.get_credentials(look_for=account)  # Si get_credentials no obtiene credenciales válidas lanza una excepción.
+        
+        if credentials.get('conn_id') in self.conns: 
+            return print(' Ya hay una conexión para conn_id {} - module {}, broker_id {}, nroComitente {} '.format(
+                          credentials['conn_id'], credentials['module'], credentials['broker_id'], credentials['nroComitente']))
+        
         return Connections.modules[credentials.get('module')](account=credentials)
-    
+        """
+        conn = Connections.modules[credentials.get('module')](account=credentials)
+        if isinstance(conn, Broker_Connection):
+            self.conns[conn.credentials.get('conn_id')] = Object_with_Lock(conn)  # Dict_with_Lock self.conns ya está protegido contra bloqueos en este método.
+        else: print(' Durante una conexión se produjo un error no identificado. conn: {}'.format(conn))
+        """
             
     def send_order(self, order):
         with self.conns as a:

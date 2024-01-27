@@ -62,10 +62,13 @@ class pyR(Broker_Connection):
     url = {'login': 'https://api.veta.xoms.com.ar/auth/getToken',
            }
     log = {}
+            
+        ##################################################
+        ### Proteger los objetos del bloqueo con locks ###
+        ##################################################
     
     # def __init__(self, broker_id=brokers.veta_id, dni=accounts_data.aleben):
     def __init__(self, account:dict=None):
-        print(' account: {} \n'.format(account))
         (account:= {} if account is None else account).update(dict(module='pyR'))  # Con esta línea aseguro el módulo correcto.
         if len(account) == 1 and 'module' in account: account.update(dict(broker_id=284))  # Broker por defecto (si solo se aporta el modulo o nada).
         super().__init__(account=account)  # Llama a login()
@@ -81,7 +84,7 @@ class pyR(Broker_Connection):
                            environment = pyRofex.Environment.LIVE)
         print(' --- Login Exitoso ---')
         # 3-Initialize Websocket Connection with the handlers
-        print(' Conectando con cuenta Nº {} ( Broker {} ) '.format(self.nroComitente, self.credentials['broker']))
+        print(' Conectando con cuenta Nº {} ( Broker {} ) '.format(self.nroComitente, self.credentials['broker_name']))
         pyRofex.init_websocket_connection(order_report_handler=order_report_handler,
                                           error_handler=error_handler,
                                           exception_handler=exception_handler)
@@ -115,14 +118,12 @@ class pyR(Broker_Connection):
 
     
         
-    def send_order(self, order:Order):  # symbol, price, size, op_type='buy', settlement='spot'):
-        print(' Enviando órden: {} {} {} {} nominales a $ {}'.format(
-               order.op_type, order.settlement, order.symbol, order.size, order.price))
+    def _send_order(self, order):  # symbol, price, size, op_type='buy', settlement='spot'):
         pyRofex.send_order_via_websocket(ticker=order.ticker, side=order.op_type, size=order.size,
                                          order_type=pyRofex.OrderType.LIMIT, price=order.price)
         print(' Orden nro {} enviada exitosamente:'.format(order.number))
         print('  {} {} {} {} nominales a $ {} '.format(
-               order.op_type, order.settlement, order.symbol, order.size, order.price))
+               order.op_type, order.settlement, order.instrument, order.size, order.price))
         
         
     def send_multiple_orders(self, df):  # ya el dataframe podría venir cargado con un listado de objetos Order

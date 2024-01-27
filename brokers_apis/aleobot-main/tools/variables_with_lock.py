@@ -40,12 +40,12 @@ class Data:  # clase idéntica a Pipeline
             
             
 class List_with_Lock:
-    def __init__(self, lst:list, lock=threading.Lock(), msg=True):
-        if not isinstance(lst, list): raise Exception(' Tipo de dato erróneo.')
+    def __init__(self, lst:list=None, lock=threading.Lock(), msg=True):
+        if not isinstance(lst, (list, type(None))): raise Exception(' Tipo de dato erróneo.')
         self.msg = msg
         self.timestamp = datetime.now()
         self.lock = lock
-        with lock: self.lst = lst.copy()
+        with lock: self.lst = lst.copy() if lst is not None else []
         self.lst_len = len(self.lst)  # Con este atributo evito tomar control del lock para calcular el tamaño de la lista
                 
     def _update(self):
@@ -104,28 +104,86 @@ class List_with_Lock:
         return iter(lst)
         
     
+class Dict_with_Lock:
+    def __init__(self, dict_:dict=None, lock=threading.Lock(), msg=True):
+        if not isinstance(dict_, (dict, type(None))): raise Exception(' Tipo de dato erróneo.')
+        self.msg = msg
+        self.timestamp = datetime.now()
+        self.lock = lock
+        with lock: self.dict = dict_ if dict_ is not None else {}
+        self.dict_len = len(self.dict)  # Con este atributo evito tomar control del lock para calcular el tamaño de la lista
+                
+    def _update(self):
+        self.dict_len = len(self.dict)
+        self.timestamp = datetime.now()
+        
+    def __enter__(self):
+        self.lock.acquire()  # No va a continuar la ejecución del código sino hasta que pueda obtener el acceso al lock
+        return self.dict
+    
+    def __exit__(self, *args):
+        if self.lock.locked(): self.lock.release()
+    
+    def __len__(self):
+        return self.dict_len
+            
+    def __getitem__(self, key):  # retorna un elemento del diccionario en base al key haciendo: Dict_with_Lock_object[key] o .get(key)
+        with self.lock:
+            return self.dict.get(key)  # Si no encuentra el key retorna None
+    
+    def __setitem__(self, key, value):
+        with self.lock:
+            self.dict[key] = value; self._update()
+
+    def set_dict(self, dict_):
+        with self.lock:
+            self.dict = dict_; self._update()
+                        
+    def pop(self, key):
+        with self.lock:
+            try: return self.dict.pop(key); self._update()
+            except KeyError: print(' Clave errónea.') if self.msg else None
+    
+    def __contains__(self, data=None): 
+        """ Consigo evaluar si un una clave o un valor, o ambos están en el diccionario del Dict_with_Lock_object.
+            Puede recibir el key directamente o un dicionario con una clave 'key' para la clave y/o una clave 'value'
+            para el valor.  """
+        with self.lock: 
+            if not isinstance(data, dict): 
+                return data in self.dict
+            key = data.get('key')
+            value = data.get('value')
+            if key is not None: 
+                return (key, value) in self.dict.items()
+            return value in self.dict.values()
+        
+    def apply_function_over_iteration(self, function, *args, **kwargs):
+        with self.lock: 
+            for k, v in self.dict.items():
+                yield function(key=k, value=v, *args, **kwargs)
+    
+
 class Object_with_Lock:
     def __init__(self, obj, lock=threading.Lock(), locked=False):
         self.obj_Timestamp = datetime.now()
         self.obj = obj
         self.lock = lock
-        self.locked = locked # con el parámetro locked me aseguro de poder entrar con el lock ya tomado 
         
     def __enter__(self):
-        # Está mal hacer if not self.lock.locked(): self.lock.acquire() ya que me retornaria el objeto que puede estar bloqueado (en uso) en otra parte.
-        if not self.locked: self.lock.acquire()  # no va a continuar la ejecución del código sino hasta que pueda obtener el acceso al lock
+        self.lock.acquire()  # No va a continuar la ejecución del código sino hasta que pueda obtener el acceso al lock
         return self.obj
     
     def __exit__(self, *args):
         if self.lock.locked(): self.lock.release()
-        self.locked = False
     
     def set_obj_value(self, obj):
-        if not self.lock.locked():
-            with self.lock:
-                self.obj = obj
-                self.obj_Timestamp = datetime.now()
-        else: print('\n El valor del objeto no pudo ser actualizado.')
+        with self.lock:
+            self.obj = obj
+            self.obj_Timestamp = datetime.now()
+        
+    def apply_method(self, method:str, *args, **kwargs):
+        with self as obj:
+            return getattr(obj, method)(*args, **kwargs)
             
 
 class Instances:

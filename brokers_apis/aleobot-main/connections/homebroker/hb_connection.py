@@ -42,6 +42,11 @@ class Order:
 
 class HB(Broker_Connection):
     alycs = [brokers.cocos_id, brokers.veta_id]
+            
+        ##################################################
+        ### Proteger los objetos del bloqueo con locks ###
+        ##################################################
+    
     def __init__(self, account:dict=None, wait_time:float=12, instances=1):
         (account:= {} if account is None else account).update(dict(module='HB'))  # Con esta línea aseguro el módulo correcto.
         if len(account) == 1 and 'module' in account: account.update(dict(broker_id=265))  # Broker por defecto (si solo se aporta el modulo o nada).

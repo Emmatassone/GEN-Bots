@@ -52,6 +52,11 @@ class appCocos(Broker_Connection):
            'tickers_rules': 'https://api.cocos.capital/api/v1/markets/tickers/rules'}
     
     def __init__(self, account:dict=None, wait_time:float=12):
+        
+        ##################################################
+        ### Proteger los objetos del bloqueo con locks ###
+        ##################################################
+        
         self.auth_token = ''
         self.log = {}
         
@@ -96,7 +101,7 @@ class appCocos(Broker_Connection):
         
     def attain_new_token(self):
         headers = { "User-Agent": user_agents.get_random(), "Accept-Encoding": "gzip, deflate, br", }
-        payload = {'email':    self.credentials['email'], 
+        payload = {'email':    self.credentials['user'], 
                    'password': self.credentials['password'] } 
         self.print_msg(' Iniciando sesión con usuario {} \n app Cocos cuenta Nº {}')
         self.log['new_token_response'] = response = requests.post(self.url['login'], json=payload, headers=headers)

@@ -22,12 +22,12 @@ from tools import file_manager
 # https://docs.sqlalchemy.org/en/20/orm/declarative_tables.html#declarative-table-with-mapped-column
 
 
-def return_engine(user, password, host, port, database):
-    return create_engine('mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(user, password, host, port, database))    
-
-
 server_info_file_path = os.getcwd()+'\\connections\\database\\'
 server_info = file_manager.Json(file_name='server_info', path=server_info_file_path).read()
+database_url = 'mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(*server_info.values())
+
+def return_engine(user, password, host, port, database):
+    return create_engine('mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(user, password, host, port, database))    
 
 engine = return_engine(**server_info)
 
