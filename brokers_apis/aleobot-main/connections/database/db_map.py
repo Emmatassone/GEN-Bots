@@ -20,11 +20,12 @@ https://docs.sqlalchemy.org/en/20/changelog/whatsnew_20.html#whatsnew-20-orm-dec
 
 # https://docs.sqlalchemy.org/en/20/orm/declarative_config.html#constructing-mapper-arguments-dynamically
 
-
+from datetime import datetime
 from typing import Dict, List  # , Optional, 
-from sqlalchemy import String, ForeignKey, ForeignKeyConstraint, PrimaryKeyConstraint, inspect
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, backref
+from sqlalchemy import String, Text, ForeignKey, ForeignKeyConstraint, PrimaryKeyConstraint, inspect
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship  #, backref
 import pandas as pd
+
 
 # declarative base class
 class Base(DeclarativeBase):
@@ -49,25 +50,43 @@ class Base(DeclarativeBase):
                 raise Exception(' {} value: {} TypeError: {} instead of {}'.format(k, v, type(v), self.columns_types.get(k)))
         # Falta agregar para los tipos unsigned y quizá validar el dato según un listado para el modulo específico.
     
-        
 
-class Module(Base):
+class Modules(Base):
     __tablename__ = 'modules'
     name: Mapped[str] = mapped_column(String(16), primary_key=True)
     
     # Relaciones:
-    #credentials: Mapped[List['Credentials']] = relationship(back_populates='module', lazy='joined')
+    credentials: Mapped[List['Credentials']] = relationship(back_populates='module_', lazy='joined')
+    urls:        Mapped[List['Urls']]        = relationship(back_populates='module_', lazy='joined')
     
 class Brokers(Base):
     __tablename__ = 'brokers'
-    id:         Mapped[int] = mapped_column(primary_key=True)
-    nombre:     Mapped[str] = mapped_column(String(255), nullable=False)
-    short_str:  Mapped[str] = mapped_column(String(50),  nullable=False)
+    id:        Mapped[int] = mapped_column(primary_key=True)
+    name:      Mapped[str] = mapped_column(String(255), nullable=False)
+    short_str: Mapped[str] = mapped_column(String(50),  nullable=False)
     
     # Relaciones:
-    #accounts =  relationship('Accounts', backref='broker')
-    #accounts =  relationship('Accounts', backref=backref('broker', lazy='joined'))  # Ver [2]
     accounts: Mapped[List['Accounts']] = relationship(back_populates='broker', lazy='joined')
+    urls:     Mapped[List['Urls']]     = relationship(back_populates='broker', lazy='joined')
+
+   
+class Urls(Base):
+    __tablename__ = 'urls'
+    module:       Mapped[str] = mapped_column(ForeignKey('modules.name'))
+    broker_id:    Mapped[int] = mapped_column(ForeignKey('brokers.id'), index=True)
+    key:          Mapped[str] = mapped_column(String(30))
+    address:      Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Relaciones:    
+    broker:  Mapped['Brokers'] = relationship(back_populates='urls', lazy='joined')
+    module_: Mapped['Modules'] = relationship(back_populates='urls', lazy='joined')
+    
+    # PrimaryKeyConstraint on composite keys:  (Ver [1])
+    __table_args__ = (PrimaryKeyConstraint(module, broker_id, key), )
+    
+    @property
+    def broker_name(self):
+        if self.broker: return self.broker.name
     
 
 class Persons(Base):
@@ -77,8 +96,6 @@ class Persons(Base):
     CUIT:           Mapped[int|None] = mapped_column()
     
     # Relaciones:
-    #accounts =      relationship('Accounts', backref='person')
-    #accounts =      relationship('Accounts', backref=backref('person', lazy='joined'))  # Ver [2]
     accounts: Mapped[List['Accounts']] = relationship(back_populates='person', lazy='joined')
     
     
@@ -88,14 +105,10 @@ class Accounts(Base):
     nroComitente: Mapped[int] = mapped_column()
     dni:          Mapped[int] = mapped_column(ForeignKey('persons.dni'), nullable=False)
     
-    # Relaciones:
-    #credentials = relationship('Credentials', backref='account')
-    #credentials = relationship('Credentials', backref=backref('account', lazy='joined'))  # Ver [2]
-    
+    # Relaciones:    
     broker: Mapped['Brokers'] = relationship(back_populates='accounts', lazy='joined')
     person: Mapped['Persons'] = relationship(back_populates='accounts', lazy='joined')
     credentials: Mapped[List['Credentials']] = relationship(back_populates='account', lazy='joined')
-    
     
     # PrimaryKeyConstraint on composite keys:  (Ver [1])
     __table_args__ = (PrimaryKeyConstraint(broker_id, nroComitente), )
@@ -105,7 +118,8 @@ class Accounts(Base):
         if self.person: return self.person.nombreCompleto
     @property
     def broker_name(self):
-        if self.broker: return self.broker.nombre
+        if self.broker: return self.broker.name
+    
     
 class Credentials(Base):   ## Reviar lo de ondelete='CASCADE', onupdate='CASCADE'  !!!!!!!!!!!!!!!!!!
     __tablename__ = 'credentials'
@@ -118,10 +132,9 @@ class Credentials(Base):   ## Reviar lo de ondelete='CASCADE', onupdate='CASCADE
     conn_token:   Mapped[str|None] = mapped_column(String(999))
     
     # Relaciones:
-    account: Mapped['Accounts'] = relationship(back_populates='credentials', lazy='joined')
-    orders = relationship('Orders', backref=backref('conn', lazy='joined'))  # Ver [2]
-    
-    
+    account: Mapped['Accounts']     = relationship(back_populates='credentials', lazy='joined')
+    module_: Mapped['Modules']      = relationship(back_populates='credentials', lazy='joined')
+    orders:  Mapped[List['Orders']] = relationship(back_populates='conn',        lazy='joined')
     
     # ForeignKeyConstraint relations on composite keys:  (Ver [1])
     __table_args__ = (PrimaryKeyConstraint( broker_id, nroComitente, module),
@@ -141,30 +154,46 @@ class Credentials(Base):   ## Reviar lo de ondelete='CASCADE', onupdate='CASCADE
         # d = self.to_dict(keys_excluded=['account'])
         d = self.data()
         d['nombreCompleto'] = self.account.person.nombreCompleto
-        d['broker_name'] = self.account.broker.nombre
+        d['broker_name'] = self.account.broker.name
         d['dni'] = self.account.dni
         return d
         
 class Orders(Base):
     __tablename__ = 'orders'
-    id:         Mapped[int]      = mapped_column(primary_key=True, autoincrement=True)
-    conn_id:    Mapped[int]      = mapped_column(ForeignKey('credentials.conn_id'), index=True)
-    id_ext:     Mapped[str|None] = mapped_column(String(50))
-    instrument: Mapped[str]      = mapped_column(String(50), nullable=False)
-    settlement: Mapped[int]      = mapped_column(nullable=False, server_default='0')
-    op_type:    Mapped[int]      = mapped_column(nullable=False, server_default='1')
-    size:       Mapped[int]      = mapped_column(nullable=False)
-    price:      Mapped[float]    = mapped_column(nullable=False)
-    remaining:  Mapped[int]      = mapped_column(nullable=False, server_default='size')
-    status:     Mapped[int]      = mapped_column(nullable=False, server_default='0')
-    currency:   Mapped[int]      = mapped_column(nullable=False, server_default='0')
-    amount:     Mapped[float]    = mapped_column(nullable=False, server_default="(size*price)")
+    id:          Mapped[int]      = mapped_column(primary_key=True, autoincrement=True)
+    conn_id:     Mapped[int]      = mapped_column(ForeignKey('credentials.conn_id'), index=True)
+    id_int:      Mapped[str]      = mapped_column(String(50), comment='internal id')
+    id_ext:      Mapped[str|None] = mapped_column(String(50), comment='external id')
+    symbol:      Mapped[str]      = mapped_column(String(50), nullable=False)
+    settlement:  Mapped[int]      = mapped_column(nullable=False, server_default='0')
+    op_type:     Mapped[int]      = mapped_column(nullable=False, server_default='1')
+    size:        Mapped[int]      = mapped_column(nullable=False)
+    price:       Mapped[float]    = mapped_column(nullable=False)
     
-    # Relaciones: Ya está en las demás tablas en al usar backref en relationship  (Ver [2])
+    remaining:   Mapped[int]      = mapped_column(nullable=False, server_default='size')
+    status:      Mapped[int]      = mapped_column(nullable=False, server_default='0')
+    currency:    Mapped[int]      = mapped_column(nullable=False, server_default='0')
+    amount:      Mapped[float]    = mapped_column(nullable=False, server_default="(size*price)")
     
-    columns_types = None  # Se completa 1 sola vez por fuera de la clase
+    order_type:  Mapped[int]      = mapped_column(server_default='0')
+    cancel_prev: Mapped[int]      = mapped_column(server_default='0', comment='type boolean')
+    
+    display_qty: Mapped[int]      = mapped_column(nullable=True)
+    iceberg:     Mapped[int]      = mapped_column(server_default='0', comment='type boolean')    
+    all_or_none: Mapped[int]      = mapped_column(server_default='0', comment='type boolean')
+
+    timeInForce: Mapped[int]      = mapped_column(server_default='0')
+    expire_date: Mapped[datetime] = mapped_column(server_default="timestamp(curdate(),'18:00:00')")
+    
+  # market:      None
+    
+    # Relaciones: 
+    conn: Mapped[List['Credentials']] = relationship(back_populates='orders', lazy='joined')
+    
+    # Validations:
+    columns_types = None     # Se completa 1 sola vez por fuera de la clase.
     columns_not_none = None  # Parámetros a completar para crear una instancia.
-    #columns_not_none = set([conn_id, instrument, size, price])  # Parámetros a completar para crear una instancia.
+    #columns_not_none = set([conn_id, symbol, size, price])  # Parámetros a completar para crear una instancia.
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -180,7 +209,7 @@ class Orders(Base):
         d['dni']            = self.conn.account.dni
         d['nombreCompleto'] = self.conn.account.person.nombreCompleto
         d['broker_id']      = self.conn.broker_id
-        d['broker_name']    = self.conn.account.broker.nombre
+        d['broker_name']    = self.conn.account.broker.name
         d['nroComitente']   = self.conn.nroComitente
         d['module']         = self.conn.module
         return d

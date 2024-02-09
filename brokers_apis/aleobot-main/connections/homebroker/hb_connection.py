@@ -47,10 +47,10 @@ class HB(Broker_Connection):
         ### Proteger los objetos del bloqueo con locks ###
         ##################################################
     
-    def __init__(self, account:dict=None, wait_time:float=12, instances=1):
+    def __init__(self, account:dict=None, wait_time:float=12, instances=1, **kwargs):
         (account:= {} if account is None else account).update(dict(module='HB'))  # Con esta línea aseguro el módulo correcto.
         if len(account) == 1 and 'module' in account: account.update(dict(broker_id=265))  # Broker por defecto (si solo se aporta el modulo o nada).
-        super().__init__(account=account)  # Llama a login()
+        super().__init__(account=account, **kwargs)  # Llama a login()
         
         self.auth = hb_auth.Account_Auth(self.credentials['broker_id'], self.nroComitente, cookies_qty=10, credentials=self.credentials)
         self.cookies = self.auth.cookies()

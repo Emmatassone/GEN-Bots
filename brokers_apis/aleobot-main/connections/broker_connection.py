@@ -5,28 +5,45 @@ Created on Wed Sep 13 21:24:00 2023
 @author: Alejandro
 """
 
-from connections.database import db_query
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import traceback
 
+import pandas as pd
+
+from connections.database import db_query, db_orders_manager
+O_db_U = db_orders_manager.Orders_Updater
 
 class Broker_Connection:
+    
+    #urls = db_query.
             
         ##################################################
         ### Proteger los objetos del bloqueo con locks ###
         ##################################################
     
-    def __init__(self, account:dict=None):  #, db_session=None
+    def __init__(self, account:dict=None, orders_db_updater=O_db_U()):  #, db_session=None
         """  Recibe un diccionario llamado account cuyas claves pueden ser broker_id, nroComitente, dni, module, email, user.  """
         self.credentials = db_query.get_credentials(look_for=account)  # Si get_credentials no obtiene credenciales válidas lanza una excepción.
         self.nroComitente = self.credentials['nroComitente']
         self.token = self.credentials['conn_token']
-        if self.credentials['module'] != 'HB': self.login()  # Corregir clase HB para eliminar restriccion para hacer login.
         
-        # self.ordersTPE = ThreadPoolExecutor()   ver si conviene conservar el executor para reutilizar los hilos
+        self.ordersTPE = ThreadPoolExecutor(max_workers=32)
+        self.orders_db_updater = orders_db_updater.start()  # Si en el constructor se crea la instancia con start=True, se va a crear el thread aun recibiendo un valor para este parámetro del constructor, hilo que va a quedar en memoria corriendo en memoria sin uso.
+        # self.session = db_query.new_scoped_session()
+        
         
     def login(self):
         print(' Iniciando sesión con cuenta Nº {} - {}: '.format(self.nroComitente, self.credentials['nombreCompleto']))
         print(' Modulo: {} ( Broker {} ) '.format(self.credentials['module'], self.credentials['broker_name']))
         # Extender este método en las clases hijas con la sentencia super().login()
+        
+    def logout(self):
+        print(' Cerrando sesión con cuenta Nº {} - {}: '.format(self.nroComitente, self.credentials['nombreCompleto']))
+        print(' Modulo: {} ( Broker {} ) '.format(self.credentials['module'], self.credentials['broker_name']))
+        
+    def connect(self):
+        print(' Desconectando cuenta Nº {} - {}: '.format(self.nroComitente, self.credentials['nombreCompleto']))
+        print(' Modulo: {} ( Broker {} ) '.format(self.credentials['module'], self.credentials['broker_name']))
         
     def __enter__(self):   # Con esto puedo utilizar la clase con la declaración with. Ejemplo: with HB() as hb: ...
         return self
@@ -37,12 +54,29 @@ class Broker_Connection:
         # La forma de tomar esos argumentos sería reemplazar *args por exception_type, exception_value y traceback
         self.logout()  ## ??????? falta implementar
 
-
-    def send_order(self, order):  # symbol, price, size, op_type='buy', settlement='spot'):
+    def send_orders(self, orders:[list[dict], pd.DataFrame], timeout=None):
+                
+        if isinstance(orders, pd.DataFrame):
+            orders = [order._asdict() for order in orders.itertuples(index=False)]
+        if not isinstance(orders, list):  # and all(isinstance(i, dict) for i in orders)
+            raise Exception(' El tipo de dato es incorrecto.')
+        return self.ordersTPE.map(self.send_order, orders, timeout=timeout, chunksize=10)
+        # in map method the iterables are collected immediately rather than lazily.
+        """
+        if   isinstance(orders, list):  # and all(isinstance(i, dict) for i in orders)
+            futures = [self.ordersTPE.submit(self._send_order, order) for order in orders]
+        elif isinstance(orders, pd.DataFrame): 
+            futures = [self.ordersTPE.submit(self._send_order, order._asdict()) for order in orders.itertuples(index=False)]
+        else: raise Exception(' El tipo de dato es incorrecto.')
+        for future in as_completed(futures, timeout=timeout):  
+            yield future.result()
+        """
+            
+        """        
         print(' Enviando órden: {} {} {} {} nominales a $ {}'.format(
-               order.op_type, order.settlement, order.instrument, order.size, order.price))
+               order.op_type, order.settlement, order.symbol, order.size, order.price))
         return self._send_order(order)
-        
+        """
 
 
     

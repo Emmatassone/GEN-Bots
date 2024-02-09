@@ -37,6 +37,13 @@ class Data:  # clase idéntica a Pipeline
         with self.lock:
             self.value = value
             raise Exception()
+        
+    def __enter__(self):
+        self.lock.acquire()  # No va a continuar la ejecución del código sino hasta que pueda obtener el acceso al lock
+        return self.value
+    
+    def __exit__(self, *args):
+        if self.lock.locked(): self.lock.release()
             
             
 class List_with_Lock:
@@ -143,6 +150,18 @@ class Dict_with_Lock:
         with self.lock:
             try: return self.dict.pop(key); self._update()
             except KeyError: print(' Clave errónea.') if self.msg else None
+            
+    def keys(self):
+        with self.lock:
+            return self.dict.keys()
+        
+    def values(self):
+        with self.lock:
+            return self.dict.values()
+        
+    def items(self):
+        with self.lock:
+            return self.dict.items()
     
     def __contains__(self, data=None): 
         """ Consigo evaluar si un una clave o un valor, o ambos están en el diccionario del Dict_with_Lock_object.
@@ -180,6 +199,12 @@ class Object_with_Lock:
         with self.lock:
             self.obj = obj
             self.obj_Timestamp = datetime.now()
+            
+    def get_obj(self):
+        # Para obtener la referencia a la ubicación en memoria. No debe ser usado directamente
+        # ya que retorna el objeto sin el lock tomado.
+        with self.lock:
+            return self.obj
         
     def apply_method(self, method:str, *args, **kwargs):
         with self as obj:

@@ -4,6 +4,7 @@ Created on Sun Jan  7 17:49:22 2024
 
 @author: Alejandro
 """
+import time
 import pandas as pd
 
 from sqlalchemy.exc import OperationalError
@@ -15,7 +16,8 @@ from connections.database import db_conn
 class Query:
     
     @staticmethod
-    def build(session:db_conn.Session, tables:list[DeclarativeBase], filters:dict[[str, callable], dict]=None):
+    def build(session:db_conn.Session, tables:list[DeclarativeBase], 
+              filters:dict[[str, callable], dict]=None, order_by:list=None):
         """ Recibe como parametros:
             - session: es la sesion que se va a usar para consultar (tipo: Session).
             - tables:  es un lista de las tablas (ya mapeadas en db_map) sobre las que se van a hacer
@@ -48,6 +50,7 @@ class Query:
                         query = method(qry=qry, table=tables[idx], values=qv[idx])
                     else:
                         query = query.join( method(qry=qry, table=tables[idx], values=qv[idx]).subquery() )
+        if order_by is not None: query.order_by(*order_by)
         return query
 
     @staticmethod
@@ -107,3 +110,15 @@ def query(session=None, method=None, *args, **kwargs):  # Nombre alternativo par
     except OperationalError as e:
         print(str(e))
         print(' Falló la operación con la base de datos. No se reintenta.')
+        
+
+def updater_loop(table, queue, stop_event, frequency=0):
+    with db_conn.Session() as sess:
+        while not stop_event.is_set():
+            q = queue.get()
+            print(q)
+            sess.add(table(**q))
+            if not queue.empty(): continue
+            sess.commit()
+            time.sleep(frequency)
+        sess.commit()  # commit de todo lo que pudo haber quedado pendiente.

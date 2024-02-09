@@ -4,20 +4,21 @@ Created on Wed Sep 13 21:24:00 2023
 
 @author: Alejandro
 """
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
 
 from tools.variables_with_lock import Object_with_Lock, Dict_with_Lock, List_with_Lock
 
 # Con las siguientes líneas importo directamente la clase en lugar del modulo para poder instanciarlo directamente.
-from connections.pyRofex.pyRofex_connection import pyR,      Order as Order_pyR
-from connections.homebroker.hb_connection   import HB,       Order as Order_HB
-from connections.cocos.cocos_connection     import appCocos, Order as Order_appCocos
+from connections.pyRofex.pyRofex_connection import pyR
+from connections.homebroker.hb_connection   import HB
+from connections.cocos.cocos_connection     import appCocos
 from connections.broker_connection import Broker_Connection
-from connections.database import db_query
+from connections.database import db_query, db_orders_manager
+O_db_U = db_orders_manager.Orders_Updater
 
 
-order_class = { 'pyR': Order_pyR, 'HB': Order_HB, 'appCocos': Order_appCocos}
 
 class Connections:
     # Para acceder a una variable externa dentro de una clase, generalmente debes proporcionar esa
@@ -31,13 +32,17 @@ class Connections:
         self.conns = Dict_with_Lock() # conns va a ser un objeto del tipo Dict_with_Lock que va a contener como clave el conn_id y
                                       # como valor un objeto del tipo Object_with_Lock con la instancia de conexión como objeto.
         self.logs = List_with_Lock()
-        self.add_connections(accounts)
+        
         self.TPE_for_sending_orders = ThreadPoolExecutor(max_workers=32)
+        self.orders_db_updater = O_db_U(start=True)
+        
+        self.add_connections(accounts)
+        
                 
-    def add_connections(self, accounts:list=[], accounts_keys:list=[]):
+    def add_connections(self, accounts:list=[]):
         # Ver la opción de no iniciar nuevamente una conexion que ya existe
         with ThreadPoolExecutor() as executor:
-            for future in as_completed([executor.submit(self.connect, acct) for acct in accounts], timeout=self.timeout):
+            for future in as_completed([executor.submit(self._new_conn, acct) for acct in accounts], timeout=self.timeout):
             # En lugar de .map me conviene usar .submit ya que con el primero no se podrá ejecutar codigo con el retorno obtenido (como con as_completed) a medida que que los hilos vayan terminando.
                 try: 
                     c = future.result()
@@ -47,9 +52,13 @@ class Connections:
                 except Exception as e:
                     print('\n Durante una conexión se produjo la siguiente excepción: \n {} {}'.format(type(e), str(e)))
                     self.logs += [traceback.format_exc()]  # traceback.print_exc()
+                    
+    def _get_conn(self, conn_id:int):  
+        # Para obtener la referencia a la ubicación en memoria. No debe ser usado directamente
+        # ya que retorna el objeto sin el lock tomado.
+        return self.conns[conn_id].get_obj()
             
-            
-    def connect(self, account:dict):
+    def _new_conn(self, account:dict):
         """ La lógica en esta función hace primar el valor de module sobre el el resto de las opciones. """
         
         if not isinstance(account, dict):
@@ -62,7 +71,7 @@ class Connections:
             return print(' Ya hay una conexión para conn_id {} - module {}, broker_id {}, nroComitente {} '.format(
                           credentials['conn_id'], credentials['module'], credentials['broker_id'], credentials['nroComitente']))
         
-        return Connections.modules[credentials.get('module')](account=credentials)
+        return Connections.modules[credentials.get('module')](account=credentials, orders_db_updater=self.orders_db_updater)
         """
         conn = Connections.modules[credentials.get('module')](account=credentials)
         if isinstance(conn, Broker_Connection):
@@ -96,8 +105,9 @@ class Connections:
                     i+=1
                     print('\n\n ejecucion nro: {} \n\n'.format(i))
                     print(row)
-                    print(order_class.get(acct[-1]))
-                    order = order_class.get(acct[-1])(*iter(row))
+                    #print(order_class.get(acct[-1]))
+                    order=None #order = order_class.get(acct[-1])(*iter(row))
+                    
                     # self.TPE_for_sending_orders.submit(conns.get(acct).send_order, order)
                     if acct[-1] == 'pyR': print('\n',order.ticker,'\n')
                     print(conns.get(acct).send_order, order)

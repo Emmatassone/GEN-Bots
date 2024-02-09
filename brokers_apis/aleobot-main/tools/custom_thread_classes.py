@@ -99,7 +99,7 @@ def data_feeder(data, stop_event, sleep_time, function, message_to_print='', pri
             threading.current_thread().start_timer()
         return_of_function = function(*args, **kwargs)
      #  print('\n elapsed_time: ',time.monotonic()-threading.current_thread()._start_time)
-     #  print('\n threading.current_thread().internal_event.is_set() 222: ', threading.current_thread().internal_event.is_set())
+     #  print('\n threading.current_thread().internal_event.is_set(): ', threading.current_thread().internal_event.is_set())
         if check_ok and not threading.current_thread().stop_timer(print_time): break  # Si el tiempo se agotó va lanzar un excepción terminando la ejecución del hilo
         if not stop_event.is_set():  # vuelvo a chequear si stop_event is set
             data.set_obj_value(return_of_function)
