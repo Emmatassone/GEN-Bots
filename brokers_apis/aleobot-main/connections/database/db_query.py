@@ -16,7 +16,12 @@ def get_credentials(session=None, look_for:dict=None, exclude:dict=None, return_
          utilizar credenciales válidas pero no incluidas en la base de datos.
          Solo se admite un valor por key.  """
     
-    if look_for is not None and look_for.get('checked'): return look_for  # Con esta línea puedo utilizar crendenciales que ya están validadas pero no guardadas en la base de datos.
+    # El siguiente bloque habilita el uso de crendenciales que no están guardadas en la base de datos:
+    if look_for is not None and look_for.get('checked'):
+        diff = set(db_map.Credentials.attributes_names) - set(look_for.keys())
+        if len (diff) == 0:
+            return look_for  
+        else: raise Exception(' AttributeError. Faltan los siguientes datos: ', diff)
     
     tables = [db_map.Credentials, db_map.Accounts, db_map.Persons, ]
     
