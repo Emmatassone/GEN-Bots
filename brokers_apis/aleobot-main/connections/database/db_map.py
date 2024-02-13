@@ -149,6 +149,9 @@ class Credentials(Base):   ## Reviar lo de ondelete='CASCADE', onupdate='CASCADE
     @property
     def broker_name(self):
         if self.account: return self.account.broker
+
+    # dict_keys_attributes:
+    attributes_names = ['nombreCompleto', 'dni', 'broker_name']
         
     def data_ext(self):
         # d = self.to_dict(keys_excluded=['account'])
@@ -222,6 +225,7 @@ Orders.columns_types = {column.name: column.type.python_type for column in inspe
 Orders.columns_not_none = {column.name for column in inspect(Orders).columns if (False if column.autoincrement == True else not column.nullable and column.server_default is None)}
 #Orders.columns_not_none = {c.name for c in Orders.columns_not_none}
 
+Credentials.attributes_names += [c.name for c in inspect(Credentials).columns]
     
     
 """ Referencias:
