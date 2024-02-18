@@ -57,6 +57,7 @@ credential_pyR = {'broker_id': 284,
                   'broker_name': 'Veta Capital S.A.',
                   'dni': 23123123,
                   'checked': True}
+# Dejar conn_token y checked como están. Usar un conn_id único (int positivo) para cada conexión.
 
 
 connPyR = pyR(credential_pyR)
@@ -92,6 +93,7 @@ credential_HB =  {'broker_id': 284,
                   'broker_name': 'Veta Capital S.A.',
                   'dni': 23123123,
                   'checked': True}
+# Dejar conn_token y checked como están. Usar un conn_id único (int positivo) para cada conexión.
 
 
 def HB_order_book_handler(online, quotes):
