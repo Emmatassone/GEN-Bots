@@ -112,8 +112,9 @@ connHB.set_on_securities_callback(HB_securities_handler)
 
 connHB.subscribe_order_book(symbols=['AL30'], settlements=['spot'], subscription='order_book')
 
-# El o
+# Fuente de el dict boards:
 # pyhomebroker/pyhomebroker/online/online.py
+# Se aplica a funcion de pyhomebroker:
 # def get_board_for_request(self, board):
 boards = {
     'bluechips': 'accionesLideres',
