@@ -69,3 +69,9 @@ class SetUpPortfolio():
         hold_exits.iloc[-1] = True
         hold_pf = vbt.Portfolio.from_signals(df['Close'], hold_entries, hold_exits)
         return hold_pf
+    
+    def build_short_signals(self, df):
+        # no termino de entender bien como armar las entries y exits
+        short_pf = vbt.Portfolio.from_signals(df['Close'], entries, exits, direction="short")
+
+        return short_pf
