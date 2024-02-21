@@ -149,7 +149,7 @@ Distributed under the GNU GPLv3 License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Emmanuel A. Tassone - [@EmmanuelTassone](https://twitter.com/EmmanuelTassone) - emmanueltassone@gmail.com
+Emmanuel A. Tassone - [@EmmanuelTassone](https://www.linkedin.com/in/emmanuel-tassone-5a2b3b275/) - emmanueltassone@gmail.com
 
 Project Link: [https://github.com/Emmatassone/GE-Bots](https://github.com/Emmatassone/GE-Bots)
 
