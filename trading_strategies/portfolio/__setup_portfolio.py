@@ -56,10 +56,11 @@ class SetUpPortfolio():
         
         strategy_signals= vbt.Portfolio.from_signals(df['Close'], df['entry'], df['exit'])
         hold_signals=self.build_hold_signals(df)
+        short_signals = self.build_short_signals(df)
         
         fig = strategy_signals.value().vbt.plot(trace_kwargs=dict(name=self.__strategy_name))
         hold_signals.value().vbt.plot(trace_kwargs=dict(name='Hold'), fig=fig)
-        
+        short_signals.value().vbt.plot(trace_kwargs=dict(name='Short'), fig=fig)
         pio.write_image(fig, 'porfolio_evolution.png', format='png')
         
     def build_hold_signals(self,df):
@@ -75,6 +76,6 @@ class SetUpPortfolio():
         # Initialize entries.
         entries = df['Close'] > 100
         exits = df['Close'] < 50
-        short_pf = vbt.Portfolio.from_signals(df['Close'], entries, exits, direction="short")
+        short_pf = vbt.Portfolio.from_signals(df['Close'], entries, exits, direction=2)
 
         return short_pf
