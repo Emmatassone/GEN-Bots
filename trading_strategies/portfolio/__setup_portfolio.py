@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import vectorbt as vbt
 import pandas as pd 
+import numpy as np
 
 class SetUpPortfolio():
     
@@ -71,7 +72,9 @@ class SetUpPortfolio():
         return hold_pf
     
     def build_short_signals(self, df):
-        # no termino de entender bien como armar las entries y exits
+        # Initialize entries.
+        entries = df['Close'] > 100
+        exits = df['Close'] < 50
         short_pf = vbt.Portfolio.from_signals(df['Close'], entries, exits, direction="short")
 
         return short_pf
