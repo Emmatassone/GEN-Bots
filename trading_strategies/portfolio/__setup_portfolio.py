@@ -74,8 +74,8 @@ class SetUpPortfolio():
     
     def build_short_signals(self, df):
         # Initialize entries.
-        entries = df['Close'] > 100
-        exits = df['Close'] < 50
+        entries = df['Close'] == True
+        exits = df['Close'] == False
         short_pf = vbt.Portfolio.from_signals(df['Close'], entries, exits, direction=2)
 
         return short_pf
