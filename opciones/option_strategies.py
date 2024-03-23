@@ -57,6 +57,35 @@ class OptionStrategyBuilder:
 
         return pd.DataFrame(bull_call_spreads).sort_values(by=order_by, ascending=False).head(rows).reset_index(drop=True)
     
+    def bear_call_spread(self, order_by='Ganancia Maxima', rows=10):
+        """
+        Build all possible bear CALL spreads with the options in the dataframe.
+        """
+        bear_call_spreads = []
+        strikes = self.call_options['strike'].unique()
+        
+        for strike1, strike2 in list(itertools.product(strikes, repeat=2)):
+        
+            if strike2<=strike1: continue
+        
+            bid = self.search_call(strike1, orderbook_side = 'bid')
+            ask = self.search_call(strike2)
+            net_credit = bid - ask 
+            spread = {
+                'Strike Venta': strike1,
+                'Precio de Venta': bid,
+                'Strike Compra': strike2,
+                'Precio de Compra': ask,
+                'Costo': None,
+                'Credito Neto': net_credit,
+                'Ganancia Maxima': net_credit,
+                'Riesgo Maximo': - (strike2 - strike1 - net_credit)
+            }
+            
+            bear_call_spreads.append(spread)
+            
+        return pd.DataFrame(bear_call_spreads).sort_values(by=order_by, ascending=False).head(rows).reset_index(drop=True)
+    
     def bull_put_spread(self, order_by='Ganancia Maxima', rows=10):
         """
         Build all possible bull PUT spreads with the options in the dataframe.
@@ -85,43 +114,35 @@ class OptionStrategyBuilder:
             bull_put_spreads.append(spread)
         return pd.DataFrame(bull_put_spreads).sort_values(by=order_by, ascending=False).head(rows).reset_index(drop=True)
     
-    def bear_call_spread(self):
-        """
-        Build all possible bear CALL spreads with the options in the dataframe.
-        """
-        bear_call_spreads = []
-        for strike in self.options_df['strike'].unique():
-            call_options = self.options_df[(self.options_df['strike'] == strike) & 
-                                           (self.options_df['kind'] == 'CALL')]
-            for call1, call2 in itertools.combinations(call_options.index, 2):
-                spread = {
-                    'ShortCall': call2,
-                    'LongCall': call1,
-                    'Cost': self.options_df.loc[call1, 'ask'] - self.options_df.loc[call2, 'ask'],
-                    'MaxProfit': self.options_df.loc[call2, 'strike'] - strike - (self.options_df.loc[call1, 'ask'] - self.options_df.loc[call2, 'ask'])
-                }
-                bear_call_spreads.append(spread)
-        return bear_call_spreads
-    
-    def bear_put_spread(self):
+    def bear_put_spread(self, order_by='Ganancia Maxima', rows=10):
         """
         Build all possible bear PUT spreads with the options in the dataframe.
         """
         bear_put_spreads = []
-        for strike in self.options_df['strike'].unique():
-            put_options = self.options_df[(self.options_df['strike'] == strike) & 
-                                          (self.options_df['kind'] == 'PUT')]
-            for put1, put2 in itertools.combinations(put_options.index, 2):
-                spread = {
-                    'ShortPut': put2,
-                    'LongPut': put1,
-                    'Cost': self.options_df.loc[put1, 'ask'] - self.options_df.loc[put2, 'ask'],
-                    'MaxProfit': strike - self.options_df.loc[put1, 'strike'] - (self.options_df.loc[put1, 'ask'] - self.options_df.loc[put2, 'ask'])
-                }
-                bear_put_spreads.append(spread)
-        return bear_put_spreads
+        strikes=self.put_options['strike'].unique()
+
+        for strike1, strike2 in list(itertools.product(strikes, repeat=2)):
+            
+            if strike2>=strike1: continue 
+        
+            ask = self.search_put(strike1)
+            bid = self.search_put(strike2, orderbook_side = 'bid')
+            cost = bid - ask 
+            
+            spread = {
+                'Strike Compra': strike1,
+                'Precio de Compra': ask,
+                'Strike Venta': strike2,
+                'Precio de Venta': bid,
+                'Costo': cost,
+                'Credito Neto': None,
+                'Ganancia Maxima': (strike1 - strike2 - cost) ,
+                'Riesgo Maximo': - cost 
+            }
+            bear_put_spreads.append(spread)
+        return pd.DataFrame(bear_put_spreads).sort_values(by=order_by, ascending=False).head(rows).reset_index(drop=True)
     
-    def butterfly(self):
+    def butterfly(self, order_by='Ganancia Maxima', rows=10):
         """
         Build butterflies using bull CALL spreads and bear PUT spreads.
         """
@@ -140,17 +161,3 @@ class OptionStrategyBuilder:
                 }
                 butterflies.append(butterfly)
         return butterflies
-
-
-df=pd.read_csv('opciones.csv')
-cleaned_df = df.dropna(subset=['volume'])
-GGAL_options=cleaned_df[cleaned_df['underlying_asset']=='GGAL']
-expiration_month='AB'
-
-GGAL_options_april=GGAL_options[GGAL_options['symbol'].str.contains(expiration_month)]
-
-strategy_builder = OptionStrategyBuilder(GGAL_options_april)
-
-butterflies = strategy_builder.bull_put_spread()
-print(butterflies)
-
