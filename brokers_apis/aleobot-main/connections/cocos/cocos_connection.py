@@ -23,6 +23,7 @@ from connections.common import brokers, securities, user_agents
 from connections.helpers import orders_helper
 from tools.custom_thread_classes import Thread_with_Timer, data_feeder
 from connections.broker_connection import Broker_Connection
+from .cocos_urls import urls
 
 
 
@@ -43,15 +44,9 @@ class appCocos(Broker_Connection):
     # Los siguientes son atributos de clase:
     attempts = range(1,6)
     sleep_time = 1
-    url = {'login':         'https://api.cocos.capital/auth/v1/token?grant_type=password',
-           'me':            'https://api.cocos.capital/api/v1/users/me',
-           'buying-power':  'https://api.cocos.capital/api/v2/orders/buying-power',
-           'selling-power': 'https://api.cocos.capital/api/v2/orders/selling-power?long_ticker=',
-           'portfolio':     'https://api.cocos.capital/api/v1/wallet/portfolio', 
-           'orders':        'https://api.cocos.capital/api/v2/orders',
-           'tickers_rules': 'https://api.cocos.capital/api/v1/markets/tickers/rules'}
+    url = urls
     
-    def __init__(self, account:dict=None, wait_time:float=12):
+    def __init__(self, account:dict=None, wait_time:float=12, **kwargs):
         
         ##################################################
         ### Proteger los objetos del bloqueo con locks ###
@@ -61,7 +56,7 @@ class appCocos(Broker_Connection):
         self.log = {}
         
         (account:= {} if account is None else account).update(dict(module='appCocos', broker_id=265))  # Con esta línea aseguro el módulo y el broker correcto.
-        super().__init__(account=account)  # Llama a login()
+        super().__init__(account=account, **kwargs)
         
         self.headers = { 'Authorization': self.auth_token, 'x-account-id': str(self.nroComitente) }
         self.orders_df = Object_with_Lock(orders_helper.app_cocos_data['orders_empty_df'])
@@ -76,6 +71,7 @@ class appCocos(Broker_Connection):
         self.tenencias  = Object_with_Lock(pd.DataFrame())
         self.saldos     = Object_with_Lock(pd.DataFrame())
         
+        self.login()
         
     def print_msg(self, msg:str):
         caller_function = inspect.currentframe().f_back.f_code.co_name

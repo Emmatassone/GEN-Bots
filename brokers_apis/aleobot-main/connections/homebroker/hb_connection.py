@@ -3,24 +3,24 @@
 @author: Alejandro Ben
 """
 
-import os, sys
+
 import time, random
 import threading
 from datetime import datetime
 import pandas as pd
-import numpy as np
 import requests as rq
 
 from pyhomebroker import HomeBroker
 from .hb_imports import hb_user_agent, SessionException, ServerException
 
-# import tools, Data, hb_auth
+
 from connections.homebroker import hb_auth
-from data.accounts import credentials as accounts_credentials
+
 from connections.common import brokers, securities
+
 from connections.helpers import orders_helper
+# from .hb_orders_helpers import settlements, op_type
 from tools.variables_with_lock import Object_with_Lock, Instances
-from tools import file_manager
 from tools.custom_thread_classes import Thread_with_Return, Thread_with_Timer, data_feeder
 
 from connections.broker_connection import Broker_Connection
@@ -33,8 +33,6 @@ headers = { 'User-Agent': hb_user_agent,
 
 procesos = {1: 'tenencias', 62: 'poder_compra', }
 
-AR_ip_file_path = os.path.dirname(os.path.abspath(__file__) if '__file__' in locals() else os.path.abspath(sys.argv[0]))[:-len('homebroker')]+'\\common\\'
-fakes_ips = file_manager.read_file_to_numpy('AR_ip_list', path=AR_ip_file_path)
 
 
 class Order:
@@ -47,10 +45,10 @@ class HB(Broker_Connection):
         ### Proteger los objetos del bloqueo con locks ###
         ##################################################
     
-    def __init__(self, account:dict=None, wait_time:float=12, instances=1):
+    def __init__(self, account:dict=None, wait_time:float=12, instances=1, **kwargs):
         (account:= {} if account is None else account).update(dict(module='HB'))  # Con esta línea aseguro el módulo correcto.
         if len(account) == 1 and 'module' in account: account.update(dict(broker_id=265))  # Broker por defecto (si solo se aporta el modulo o nada).
-        super().__init__(account=account)  # Llama a login()
+        super().__init__(account=account, **kwargs)  # Llama a login()
         
         self.auth = hb_auth.Account_Auth(self.credentials['broker_id'], self.nroComitente, cookies_qty=10, credentials=self.credentials)
         self.cookies = self.auth.cookies()
@@ -97,17 +95,16 @@ class HB(Broker_Connection):
         print(' --- El usuario no pudo ser autenticado ---')
         return False      """
     
-    def _fake_ip(self):
-        return np.random.choice(fakes_ips)
-        
+
     def _ex_login(self, hb=None):
         start_time = time.monotonic()
         # if hb is None: hb = self.hb_connection # Con esta instrucción no hay necesidad de hacer el resto de las veces la evaluación: (self.hb_connection if hb is None else hb)
         if self.logged_in(hb): return True
-        (self.hb_connection if hb is None else hb).auth._HomeBrokerSession__get_ipaddress = self._fake_ip
+        (self.hb_connection if hb is None else hb).auth.__get_ipaddress = hb_auth.AR_ip.get_random()
         
         print(' Iniciando sesión con cuenta Nº {}: \n  {} ( Broker Nº {} ) '.format(self.auth.nroComitente, self.auth.credentials['nombreCompleto'], self.auth.broker_id))
         rta = (self.hb_connection if hb is None else hb).auth.login(dni=self.credentials['dni'], user=self.credentials['user'], password=self.credentials['password'])
+        
      #  if rta: self.cookies += self._cookies(hb)
      #  if rta and len(self.cookies) < 10:
      #      self.cookies += [(self.hb_connection if hb is None else hb).auth.cookies]
@@ -119,8 +116,8 @@ class HB(Broker_Connection):
         return (self.hb_connection if hb is None else hb).auth.is_user_logged_in
     
     def logout(self, hb=None):
-        credentials = accounts_credentials.ctasComitente.loc[(self.auth.broker_id, self.auth.nroComitente)]
-        print(' CERRANDO sesión con cuenta Nº {}: \n  {} ( Broker Nº {} ) '.format(self.auth.nroComitente, credentials['nombreCompleto'], self.auth.broker_id))
+        
+        print(' CERRANDO sesión con cuenta Nº {}: \n  {} ( Broker Nº {} ) '.format(self.nroComitente, self.credentials['nombreCompleto'], self.credentials['broker_id']))
         if self.logged_in(hb):
             self.disconnect(hb, msg=False)
             (self.hb_connection if hb is None else hb).auth.logout()
@@ -364,8 +361,9 @@ class HB(Broker_Connection):
                       'remaining_size', 'datetime', 'status', 'cancellable', 'total'
     """
     def get_orders(self, msg=False):
-        for i in self.attempts:
-            with Object_with_Lock(*self.hb_instances.get_first_available(), locked=True) as hb:
+        hb, lock = self.hb_instances.get_first_available()
+        try:
+            for i in self.attempts:
                 if hb is None: print('\n\n hb get_orders is None!!!!!!!!!!!!!!!!!!! \n\n ')
                 try:    
                     if msg: print(' ============ Obteniendo Listado de Ordenes =============') 
@@ -374,13 +372,15 @@ class HB(Broker_Connection):
                     if not self._manage_exception(exception, hb, attempt=i): break # Si la excepción no pudo ser manejada corto el loop
                     else:  # Si la excepción pudo ser manejada reseteo el timer
                         if isinstance(threading.current_thread(), Thread_with_Timer):
-                            threading.current_thread().start_timer()
-            """
-            finally:
-            # Si el bloque try se pudo ejecutar, self.ordersList se habrá actualizado. Si surgió un excepcion 
-            # no manejada quedará el valor de self.ordersList que estaba. De cualquier forma retorno dicho valor
-                return self.ordersList  #_pending_orders_format()
-            """
+                            threading.current_thread().start_timer() 
+                """
+                finally:
+                # Si el bloque try se pudo ejecutar, self.ordersList se habrá actualizado. Si surgió un excepcion 
+                # no manejada quedará el valor de self.ordersList que estaba. De cualquier forma retorno dicho valor
+                    return self.ordersList  #_pending_orders_format()  """
+        except:  print(' No se pudo obtener el listado de ordenes. ')
+        finally: lock.release()
+
     
     def orders_updater_start(self, stop_event=threading.Event(), timer_event=threading.Event(), msg=False):  #orders_feeder, get_orders_continuously
         message_to_print = ' ============= Listado de Ordenes Recibido ==============' if msg else ''
@@ -400,7 +400,8 @@ class HB(Broker_Connection):
 
     def cancel_orders(self, ordersToCancel=None):  # ordersToCancel es un DataFrame
         def thread(order=None):
-            with Object_with_Lock(*self.hb_instances.get_first_available(), locked=True) as hb:
+            hb, lock = self.hb_instances.get_first_available()
+            try:
                 if hb is None: print('\n\n hb cancel_orders is None!!!!!!!!!!!!!!!!!!! \n\n ')
                 for i in self.attempts:
                     try:
@@ -413,6 +414,8 @@ class HB(Broker_Connection):
                         break # si no hay una excepcion no reintenta
                     except Exception as exception:
                         if not self._manage_exception(exception, hb=hb, attempt=i): break # Si no pude manejar la excepcion corto el loop
+            except:  print(' La orden no pudo ser cancelada. ')
+            finally: lock.release()
         if ordersToCancel is None:
             print(' ============= Cancelando TODAS las Ordenes =============')
           # thread()  # no necesito crear un nuevo hilo, solo llamo a la funcion.
@@ -454,17 +457,25 @@ class HB(Broker_Connection):
         print(' == NO PUDO CANCELARSE LA ORDEN: {} {} {} =='.format(int(order_number), op_type, symbol))
         
         
-    def send_order(self, order:Order):  # symbol, price, size, op_type='buy', settlement='spot'):
-        with Object_with_Lock(*self.hb_instances.get_first_available(), locked=True) as hb:
+    def send_order(self, order:dict):  # symbol, price, size, op_type='buy', settlement='spot'):
+        hb, lock = self.hb_instances.get_first_available()
+        try:
             if hb is None: print('\n\n hb send_order is None!!!!!!!!!!!!!!!!!!! \n\n ')
-            for i in self.attempts:
+            
+            order['op_type'] = { 1: 'buy', -1: 'sell', }.get(order.get('op_type'))
+            order['settlement'] = { 0: 'spot', 1: '24hs', 2: '48hs', }.get(order.get('settlement'))
+            print(f'\n{order}\n')
+            for i in range(2): #self.attempts:
                 try:  # retorno el nro. de orden 
                     print(' Enviando órden: {} {} {} {} nominales a $ {}'.format(
-                           order.op_type, order.settlement, order.symbol, order.size, order.price))
-                    order.number = getattr(hb.orders, 'send_'+order.op_type+'_order')(order.symbol, order.settlement, order.price, order.size)
-                    print(' Orden nro {} enviada exitosamente:'.format(order.number))
+                           order.get('op_type'), order.get('settlement'), 
+                           order.get('symbol'),  order.get('size'), order.get('price')))
+                    order['number'] = getattr(hb.orders, 'send_'+order.get('op_type')+'_order')(
+                        order.get('symbol'), order.get('settlement'), order.get('price'), order.get('size'))
+                    print(' Orden nro {} enviada exitosamente:'.format(order.get('number')))
                     print('  {} {} {} {} nominales a $ {} '.format(
-                           order.op_type, order.settlement, order.symbol, order.size, order.price))
+                           order.get('op_type'), order.get('settlement'), 
+                           order.get('symbol'),  order.get('size'), order.get('price')))
                     break
                 except Exception as exception:
                     if str(exception) == ' NoLogin':
@@ -472,16 +483,18 @@ class HB(Broker_Connection):
                     if str(exception).find('Por favor intente nuevamente más tarde',67) > 0:
                         print(' Orden Rechazada: Ocurrió un error inesperado. Por favor intente nuevamente más tarde.')
                     elif isinstance(exception, ServerException):
-                        balance = self._check_for_balance(exception, order.op_type)
+                        balance = self._check_for_balance(exception, order.get('op_type'))
                         if balance is not None and balance > 0:
-                            order.original_size, order.size, i = order.size, balance, i-1
+                            order['original_size'], order['size'], i = order.get('size'), balance, i-1
                         else:
-                            order.status = order.status_map['REJECTED']
+                            order['status'] = order_status_map['REJECTED']
                             break
                     elif not self._manage_exception(exception, hb=hb, attempt=i): 
-                        order.status = order.status_map['REJECTED']
+                        order['status'] = order_status_map['REJECTED']
                         break # Si no pude manejar la excepcion corto el loop
                 print(' Reintento Nº ', i+1)
+        except:  print(' La orden no pudo ser enviada. ')
+        finally: lock.release()
 
     def _check_for_balance(self, exception, op_type):
         saldoDisponible = 0
@@ -498,20 +511,17 @@ class HB(Broker_Connection):
             return print(' Orden Rechazada: Saldo insuficiente ( Saldo:', saldoDisponible,')')
         return print(' Exception: ',exception,'\n Orden Rechazada.')
 
-    def send_multiple_orders(self, df):  # ya el dataframe podría venir cargado con un listado de objetos Order
-        orders=[]
-        for index, row in df.iterrows():
-            try:
-                orders += [Order(*iter(row))]
-                threading.Thread(target=self.send_order, args=(orders[-1],), daemon=True).start()
-            except Exception as exception:
-                print(' DataException. {} '.format(str(exception)))
-                continue
-        return orders
-        
-        # Si quisiera utilizar los nros de ordenes obtenidos al ser enviadas tengo que hacer un pipeline o algo por el estilo
 
 
+
+order_status_map = { 'CREATED'  :  0,
+                     'REJECTED' : -1,
+                     'PENDING'  :  1, 
+                     'OFFERED'  :  2,
+                     'PARTIAL'  :  3,
+                     'COMPLETED':  4,
+                     'CANCELLED': -2,
+                     'BLOCKED'  :  5, }
 
 
 """ df = pd.DataFrame({'symbol': ['AL30', 'AL30D',], 

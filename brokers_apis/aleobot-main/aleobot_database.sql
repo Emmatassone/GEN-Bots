@@ -2,7 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Tiempo de generación: 22-01-2024 a las 17:00:16
+-- Servidor: localhost:3310
+-- Tiempo de generación: 09-02-2024 a las 21:55:12
 -- Versión del servidor: 8.2.0
 -- Versión de PHP: 8.2.12
 
@@ -39,11 +40,11 @@ CREATE TABLE `accounts` (
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `accounts_view` (
-`nroComitente` int unsigned
+`broker` varchar(255)
 ,`broker_id` int unsigned
-,`broker` varchar(255)
 ,`dni` int unsigned
 ,`nombreCompleto` varchar(255)
+,`nroComitente` int unsigned
 );
 
 -- --------------------------------------------------------
@@ -54,7 +55,7 @@ CREATE TABLE `accounts_view` (
 
 CREATE TABLE `brokers` (
   `id` int(3) UNSIGNED ZEROFILL NOT NULL,
-  `nombre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `short_str` char(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -68,10 +69,10 @@ CREATE TABLE `credentials` (
   `broker_id` int UNSIGNED NOT NULL,
   `nroComitente` int UNSIGNED NOT NULL,
   `module` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `user` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `conn_id` smallint UNSIGNED NOT NULL,
-  `conn_token` varchar(999) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT ''
+  `conn_token` varchar(999) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -81,15 +82,15 @@ CREATE TABLE `credentials` (
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `credentials_view` (
-`nroComitente` int unsigned
-,`nombreCompleto` varchar(255)
+`broker` varchar(255)
 ,`broker_id` int unsigned
-,`broker` varchar(255)
-,`module` varchar(16)
-,`user` varchar(30)
-,`password` varchar(255)
 ,`conn_id` smallint unsigned
 ,`conn_token` varchar(999)
+,`module` varchar(16)
+,`nombreCompleto` varchar(255)
+,`nroComitente` int unsigned
+,`password` varchar(255)
+,`user` varchar(30)
 );
 
 -- --------------------------------------------------------
@@ -110,17 +111,25 @@ CREATE TABLE `modules` (
 
 CREATE TABLE `orders` (
   `id` int UNSIGNED NOT NULL,
-  `conn_id` char(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `id_ext` char(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `instrument` char(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '(str_id)',
-  `settlement` tinyint UNSIGNED NOT NULL COMMENT '(int_id)',
-  `op_type` tinyint NOT NULL COMMENT '(int_id)',
+  `conn_id` smallint UNSIGNED NOT NULL,
+  `id_int` char(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'internal id',
+  `id_ext` char(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'external id',
+  `symbol` char(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '(str_id)',
+  `settlement` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT '(int_id)',
+  `op_type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '(int_id)',
   `size` mediumint UNSIGNED NOT NULL,
   `price` float UNSIGNED NOT NULL,
-  `remaining` mediumint UNSIGNED NOT NULL,
-  `status` tinyint UNSIGNED NOT NULL COMMENT '(int_id)',
-  `currency` tinyint UNSIGNED NOT NULL COMMENT '(int_id)',
-  `amount` tinyint UNSIGNED NOT NULL
+  `remaining` mediumint UNSIGNED NOT NULL DEFAULT ((`size` * 1)),
+  `status` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT '(int_id)',
+  `currency` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT '(int_id)',
+  `amount` float UNSIGNED NOT NULL DEFAULT ((`size` * `price`)),
+  `order_type` tinyint UNSIGNED DEFAULT '0',
+  `cancel_prev` tinyint UNSIGNED DEFAULT '0' COMMENT 'type boolean',
+  `display_qty` mediumint UNSIGNED DEFAULT NULL,
+  `iceberg` tinyint UNSIGNED DEFAULT '0' COMMENT 'type boolean',
+  `all_or_none` tinyint UNSIGNED DEFAULT '0' COMMENT 'type boolean',
+  `timeInForce` tinyint UNSIGNED DEFAULT '0',
+  `expire_date` datetime DEFAULT (timestamp(curdate(),_utf8mb4'18:00:00'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -150,11 +159,24 @@ CREATE TABLE `settlements` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `urls`
+--
+
+CREATE TABLE `urls` (
+  `module` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `broker_id` int UNSIGNED NOT NULL,
+  `key` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `address` text COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura para la vista `accounts_view`
 --
 DROP TABLE IF EXISTS `accounts_view`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`ale`@`%` SQL SECURITY DEFINER VIEW `accounts_view`  AS SELECT `a`.`nroComitente` AS `nroComitente`, `a`.`broker_id` AS `broker_id`, `b`.`nombre` AS `broker`, `a`.`dni` AS `dni`, `p`.`nombreCompleto` AS `nombreCompleto` FROM ((`accounts` `a` join `persons` `p` on((`a`.`dni` = `p`.`dni`))) join `brokers` `b` on((`a`.`broker_id` = `b`.`id`)))WITH CASCADED CHECK OPTION  ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`ale`@`%` SQL SECURITY DEFINER VIEW `accounts_view`  AS SELECT `a`.`nroComitente` AS `nroComitente`, `a`.`broker_id` AS `broker_id`, `b`.`name` AS `broker`, `a`.`dni` AS `dni`, `p`.`nombreCompleto` AS `nombreCompleto` FROM ((`accounts` `a` join `persons` `p` on((`a`.`dni` = `p`.`dni`))) join `brokers` `b` on((`a`.`broker_id` = `b`.`id`)))WITH CASCADED CHECK OPTION  ;
 
 -- --------------------------------------------------------
 
@@ -163,7 +185,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`ale`@`%` SQL SECURITY DEFINER VIEW `accounts
 --
 DROP TABLE IF EXISTS `credentials_view`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`ale`@`%` SQL SECURITY DEFINER VIEW `credentials_view`  AS SELECT `crd`.`nroComitente` AS `nroComitente`, `prs`.`nombreCompleto` AS `nombreCompleto`, `crd`.`broker_id` AS `broker_id`, `brk`.`nombre` AS `broker`, `crd`.`module` AS `module`, `crd`.`user` AS `user`, `crd`.`password` AS `password`, `crd`.`conn_id` AS `conn_id`, `crd`.`conn_token` AS `conn_token` FROM (((`credentials` `crd` join `accounts` `acct` on(((`crd`.`broker_id` = `acct`.`broker_id`) and (`crd`.`nroComitente` = `acct`.`nroComitente`)))) join `persons` `prs` on((`acct`.`dni` = `prs`.`dni`))) join `brokers` `brk` on((`crd`.`broker_id` = `brk`.`id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`ale`@`%` SQL SECURITY DEFINER VIEW `credentials_view`  AS SELECT `crd`.`nroComitente` AS `nroComitente`, `prs`.`nombreCompleto` AS `nombreCompleto`, `crd`.`broker_id` AS `broker_id`, `brk`.`name` AS `broker`, `crd`.`module` AS `module`, `crd`.`user` AS `user`, `crd`.`password` AS `password`, `crd`.`conn_id` AS `conn_id`, `crd`.`conn_token` AS `conn_token` FROM (((`credentials` `crd` join `accounts` `acct` on(((`crd`.`broker_id` = `acct`.`broker_id`) and (`crd`.`nroComitente` = `acct`.`nroComitente`)))) join `persons` `prs` on((`acct`.`dni` = `prs`.`dni`))) join `brokers` `brk` on((`crd`.`broker_id` = `brk`.`id`))) ;
 
 --
 -- Índices para tablas volcadas
@@ -201,7 +223,8 @@ ALTER TABLE `modules`
 --
 ALTER TABLE `orders`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_id_ext` (`id_ext`);
+  ADD KEY `idx_id_ext` (`id_ext`),
+  ADD KEY `conn_id` (`conn_id`);
 
 --
 -- Indices de la tabla `persons`
@@ -214,6 +237,13 @@ ALTER TABLE `persons`
 --
 ALTER TABLE `settlements`
   ADD PRIMARY KEY (`t`);
+
+--
+-- Indices de la tabla `urls`
+--
+ALTER TABLE `urls`
+  ADD PRIMARY KEY (`module`,`key`,`broker_id`) USING BTREE,
+  ADD KEY `urls_ibfk_2` (`broker_id`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -254,6 +284,19 @@ ALTER TABLE `accounts`
 ALTER TABLE `credentials`
   ADD CONSTRAINT `credentials_ibfk_1` FOREIGN KEY (`broker_id`,`nroComitente`) REFERENCES `accounts` (`broker_id`, `nroComitente`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `credentials_ibfk_2` FOREIGN KEY (`module`) REFERENCES `modules` (`name`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `orders`
+--
+ALTER TABLE `orders`
+  ADD CONSTRAINT `FK_orders_credentials` FOREIGN KEY (`conn_id`) REFERENCES `credentials` (`conn_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `urls`
+--
+ALTER TABLE `urls`
+  ADD CONSTRAINT `urls_ibfk_1` FOREIGN KEY (`module`) REFERENCES `modules` (`name`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `urls_ibfk_2` FOREIGN KEY (`broker_id`) REFERENCES `brokers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

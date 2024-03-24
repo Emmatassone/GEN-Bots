@@ -5,24 +5,17 @@ Created on Thu May 25 20:17:36 2023
 @author: Alejandro
 """
 
-import os
 import time, threading
 import requests as rq
 import urllib.parse, json
 from pyquery import PyQuery as pq
-import numpy as np
 
 from pyhomebroker import HomeBroker
 
 from .hb_imports import hb_user_agent, hb_brokers
-# import Data, Tools
-from tools import file_manager
+from connections.common import AR_ip
 from tools.variables_with_lock import List_with_Lock
 
-
-
-# AR_ip_file_path = os.path.dirname(os.path.abspath(__file__) if '__file__' in locals() else os.path.abspath(sys.argv[0]))[:-len('homebroker')]+'\\common\\'
-fakes_ips = file_manager.read_file_to_numpy('AR_ip_list', path=os.getcwd()+'\\connections\\common\\')
 
 class Account_Auth:
     def __init__(self, broker_id, nroComitente, cookies_qty=1, msg=False, credentials=None):
@@ -80,9 +73,8 @@ class Account_Auth:
             return [{k: v for k, v in sess.cookies.items()}]
                 
     def login_main(self):
-        global fakes_ips
         payload = self.payload
-        payload['IpAddress'] = np.random.choice(fakes_ips)
+        payload['IpAddress'] = AR_ip.get_random()
         payload = urllib.parse.urlencode(payload)
         headers = { 'User-Agent': hb_user_agent, 'Accept-Encoding': 'gzip, deflate',
                     'Content-Type': 'application/x-www-form-urlencoded' }
@@ -90,9 +82,8 @@ class Account_Auth:
         return self._login('login_main', url, payload, headers)
         
     def login_alternative(self):
-        global fakes_ips
         payload = self.payload
-        payload['IpAddress'] = np.random.choice(fakes_ips)
+        payload['IpAddress'] = AR_ip.get_random()
         payload = json.dumps(payload, separators=(',', ':'))
         headers = { 'User-Agent': hb_user_agent, 'Accept-Encoding': 'gzip, deflate',
                     'Content-Type': 'application/json; charset=utf-8' }
@@ -100,7 +91,6 @@ class Account_Auth:
         return self._login('login_alternative', url, payload, headers)
         
     def login_alternative_2(self):
-        global fakes_ips
         url = '{}/Login/Ingresar'.format(hb_brokers.loc[self.broker_id, 'url'])
         return self._login('login_alternative_2', url, self.payload, headers={})
  

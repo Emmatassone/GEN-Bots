@@ -5,206 +5,194 @@ Created on Thu Apr  6 12:51:31 2023
 @author: Alejandro
 """
 
-from datetime import datetime
-import pandas as pd
-import requests
+import uuid
 
 import pyRofex
 
-# import Data, Tools
+from ..broker_connection import Broker_Connection, db_query
+from . import pyRofex_handlers as handlers
+from .pyRofex_orders_helpers import settlements, side  #, orderType, timeInForce, market
+from .pyRofex_wrapper import PyRofexWrapper
+from .pyRofex_brokers_data import urls
+import global_config
 
-from .primaryURLs import primaryURLs
-from connections.common import brokers
-from connections.common import securities
-from tools import file_manager
-
-from connections.broker_connection import Broker_Connection
-
-# module_alycs = [brokers.veta_id, ] # Data.cocos
-
-class Order:
-   pass
-
-def market_data_handler(msg):
-    # print("Market Data msg Received: {0}".format(msg))
-    # msg['instrumentId']['symbol'][14:].split(' - ')
-    
-    index = pd.MultiIndex.from_product([[i if i!='CI' else 'spot'] for i in msg['instrumentId']['symbol'][14:].split(' - ')]+[range(1,6)], 
-                                       names=['symbol', 'settlement', 'position'])
-    ask_df = pd.DataFrame(msg['marketData']['OF'], columns=['size', 'price'], index=index).rename(columns={'price': 'ask', 'size': 'ask_size'})
-    bid_df = pd.DataFrame(msg['marketData']['BI'], columns=['size', 'price'], index=index).rename(columns={'price': 'bid', 'size': 'bid_size'})
-    df = pd.concat([bid_df, ask_df], axis=1)
-    df.insert(2, 'bid_offers_count', 0)
-    df['ask_offers_count']=0
-    print(df)
-    
-def order_report_handler(message):
-    print("Order Report Message Received: {0}".format(message))
-    # 6-Handler will validate if the order is in the correct state (pending_new)
-    if message["orderReport"]["status"] == "NEW":
-        # 6.1-We cancel the order using the websocket connection
-        print("Send to Cancel Order with clOrdID: {0}".format(message["orderReport"]["clOrdId"]))
-        pyRofex.cancel_order_via_websocket(message["orderReport"]["clOrdId"])
-
-    # 7-Handler will receive an Order Report indicating that the order is cancelled (will print it)
-    if message["orderReport"]["status"] == "CANCELLED":
-        print("Order with ClOrdID '{0}' is Cancelled.".format(message["orderReport"]["clOrdId"]))
-    
-def error_handler(message):
-    print("Error Message Received: {0}".format(message))
-
-def exception_handler(e):
-    print("Exception Occurred: {0}".format(e.msg))
 
 class pyR(Broker_Connection):
-    Order = Order
-    alycs = [brokers.veta_id, ]
-    url = {'login': 'https://api.veta.xoms.com.ar/auth/getToken',
-           }
-    log = {}
-            
-        ##################################################
-        ### Proteger los objetos del bloqueo con locks ###
-        ##################################################
+    class_name = 'pyR'
+    use_wrapper = True
     
-    # def __init__(self, broker_id=brokers.veta_id, dni=accounts_data.aleben):
-    def __init__(self, account:dict=None):
+    def __init__(self, account:dict=None, **kwargs):
+        
         (account:= {} if account is None else account).update(dict(module='pyR'))  # Con esta línea aseguro el módulo correcto.
         if len(account) == 1 and 'module' in account: account.update(dict(broker_id=284))  # Broker por defecto (si solo se aporta el modulo o nada).
-        super().__init__(account=account)  # Llama a login()
+        super().__init__(account=account, **kwargs)
+        
+        self.conn = (PyRofexWrapper if self.use_wrapper else pyRofex)(self.credentials['conn_id'])
+        _urls = urls if not global_config.use_database else db_query.get_urls(self.class_name)
+        for key, address in _urls[self.credentials['broker_id']].items():
+            if key=='url': self.url = address
+            self.conn._set_environment_parameter(key, address, pyRofex.Environment.LIVE)
+            
+        self.login()
+        self.connect() # el constructor podría recibir el parámetro connect=True que define si hacer esto o no
         
     def login(self):
-        super().login()
-        pyRofex._set_environment_parameter("url", primaryURLs[self.credentials['broker_id']]['api_url'], pyRofex.Environment.LIVE) 
-        pyRofex._set_environment_parameter("ws",  primaryURLs[self.credentials['broker_id']]['ws_url' ], pyRofex.Environment.LIVE)
-        print( 'X-Username: ', self.credentials['user'], 'X-Password:', self.credentials['password'] ) 
-        pyRofex.initialize(user        = self.credentials['user'],
-                           password    = self.credentials['password'], 
-                           account     = self.nroComitente,
-                           environment = pyRofex.Environment.LIVE)
+        super().login()  # el metodo de la clase padre podría llamar al de la clase hija haciendo self._login()
+        
+        self.conn.initialize( 
+            user         = self.credentials['user'],
+            password     = self.credentials['password'], 
+            account      = self.nroComitente,
+            environment  = pyRofex.Environment.LIVE,
+            active_token = self.credentials['conn_token'])  # ver la conveniencia de dejar este argumento
+        
+        self.ws_conn   = self.conn.get_ws_conn()
+        self.rest_conn = self.conn.get_rest_conn()
         print(' --- Login Exitoso ---')
+
+        
+    def logout(self):
+        self.ws_conn.close()
+    
+    def connect(self):
         # 3-Initialize Websocket Connection with the handlers
         print(' Conectando con cuenta Nº {} ( Broker {} ) '.format(self.nroComitente, self.credentials['broker_name']))
-        pyRofex.init_websocket_connection(order_report_handler=order_report_handler,
-                                          error_handler=error_handler,
-                                          exception_handler=exception_handler)
+        self.conn.init_websocket_connection(
+            order_report_handler = handlers.order_report_handler,
+            error_handler        = handlers.error_handler,
+            exception_handler    = handlers.exception_handler, )
         print(' --- Conexión Exitosa ---')
         # 4-Subscribes to receive order report for the default account
         print(' Suscribiendo a {} {}'.format(None, None))
-        pyRofex.order_report_subscription()
+        self.conn.order_report_subscription()
         print(' Suscripción Exitosa.')
         
-    def attain_new_token(self):
-         headers = {'X-Username': self.credentials['user'], 
-                    'X-Password': self.credentials['password'] } 
-         print( 'X-Username: ', self.credentials['user'], 'X-Password:', self.credentials['password'] ) 
-         
-         
-         
-         self.log['new_token_response'] = response = requests.post(self.url['login'], headers=headers)
-         if response.status_code < 400 :
-             self.auth_token = 'Bearer {}'.format(response.headers['X-Auth-Token'])
-           # self.headers = { 'Authorization': self.auth_token, 'x-account-id': str(self.nroComitente) }
-             print(' --- Login Exitoso ---')
-             if file_manager.save_to_txt(self.auth_token, 'veta_token_'+str(self.nroComitente), path=brokers.token_path):
-                 print(' Token guardado en archivo.')
-             else: print(' El token NO pudo ser guardado en archivo.')
-             return True
-         else: print(' --- El usuario no pudo ser autenticado ---'); return False
-
-    def all_orders_status(self):
-        url='https://api.veta.xoms.com.ar/rest/order/all?accountId={}'.format(self.nroComitente)
-        return requests.get(url, headers = {'X-Auth-Token': self.auth_token}).json()
-
-    
+    def send_order(self, order:dict):  # symbol, price, size, op_type='buy', settlement='spot'):
+        # c._get_conn(1).send_order({'symbol': 'AL30', 'settlement': 0, 'side': 1, 'price': 45000, 'size': 1})
         
-    def _send_order(self, order):  # symbol, price, size, op_type='buy', settlement='spot'):
-        pyRofex.send_order_via_websocket(ticker=order.ticker, side=order.op_type, size=order.size,
-                                         order_type=pyRofex.OrderType.LIMIT, price=order.price)
-        print(' Orden nro {} enviada exitosamente:'.format(order.number))
+        order['id_int']  = uuid.uuid4()
+        order['conn_id'] = self.credentials['conn_id']
+        # self.orders_db_updater.queue.put(order)
+        
+        ticker = 'MERV - XMEV - {} - {}'.format(order.get('symbol'), settlements.get(order.get('settlement')) )
+        self.ws_conn.send_order(
+            account            = self.nroComitente,
+            ticker             = ticker,
+            side               = side.get(order.get('op_type')),
+            size               = order.get('size'),
+            order_type         = order.get('order_type', pyRofex.OrderType.LIMIT),
+            price              = order.get('price'),
+            all_or_none        = order.get('all_or_none', False),
+            market             = order.get('market', pyRofex.service.Market.ROFEX),
+            time_in_force      = order.get('time_in_force', pyRofex.service.TimeInForce.DAY),
+            cancel_previous    = order.get('cancel_prev', False),
+            iceberg            = order.get('iceberg', False),
+            expire_date        = order.get('expire_date', None),
+            display_quantity   = order.get('display_qty', None),
+            ws_client_order_id = order.get('id_int'), )
+        
+        print(' Orden nro {} enviada exitosamente:'.format(order.get('id_int')))
         print('  {} {} {} {} nominales a $ {} '.format(
-               order.op_type, order.settlement, order.instrument, order.size, order.price))
-        
-        
-    def send_multiple_orders(self, df):  # ya el dataframe podría venir cargado con un listado de objetos Order
-        orders=[]
-        for index, row in df.iterrows():
-            try:
-                orders += [Order(*iter(row))]
-                self.send_order(orders[-1])
-            except Exception as exception:
-                print(' DataException. {} '.format(str(exception)))
-                continue
-        return orders
-        
+               side.get(order.get('op_type')), 
+               order.get('size'), 
+               order.get('symbol'), 
+               settlements.get(order.get('settlement')), 
+               order.get('price'), ))
+        return order['id_int']
 
-        
-        
-        
-
-class Order:    
-#   status_map = [ 'CREATED', 'REJECTED', 'PENDING', 'OFFERED', 'PARTIAL', 'COMPLETED', 'CANCELLED', 'BLOCKED' ]
-    status_map = { 'CREATED'  :  0,
-                   'REJECTED' : -1,
-                   'PENDING'  :  1, 
-                   'OFFERED'  :  2,
-                   'PARTIAL'  :  3,
-                   'COMPLETED':  4,
-                   'CANCELLED': -2,
-                   'BLOCKED'  :  5, }
-
-    def __init__(self, symbol, price, size, op_type='buy', settlement='spot'):
+    def get_all_orders_status(self):
+        return self.conn.get_all_orders_status()
     
-        if symbol in securities.symbols:
-            self.symbol = symbol
-            if settlement in securities.settlements:
-                self.settlement = settlement
-                ticker = securities.ticker_mask(symbol, settlement)
-                if ticker in securities.tickers: self.ticker = ticker
-            else: raise Exception(' Plazo inválido!')
-        else: raise Exception(' Símbolo inválido!')
-        
-        if float(price) > 0: self.price = float(price)
-        else: raise Exception(' Precio inválido!')
-        
-        if int(size) > 0: self.size = int(size)
-        else: raise Exception(' Cantidad inválida!')
-        
-        if op_type.lower() in ['buy', 'sell']: self.op_type = pyRofex.Side.BUY if op_type.lower()=='buy' else pyRofex.Side.SELL
-        else: raise Exception(' Operación inválida!')        
-
-        
-        self.status = self.status_map['CREATED']
-        self.number = 0
-        self.original_size = 0
-        self.cancellable = True
-        self.remaining_size = self.size
-        self.datetime = pd.to_datetime(datetime.now())
-        
-    def to_df(self):
-        df = pd.DataFrame([self.__dict__])
-        df.set_index('number')
-        return df
+    def get_account_position(self):
+        return self.conn.get_account_position()
     
-    def to_hb_df(self):
-        df = self.to_df()
-        df.drop(['original_size'], axis=1, inplace=True)
-        df.rename(columns={ 'op_type': 'operation_type', 'number': 'order_number' }, inplace=True)
-        df['operation_type'] = df['operation_type'].str.upper()
-        status_map_inverted = {v: k for k, v in self.status_map.items()}
-        df['status'].replace(status_map_inverted, inplace=True)
-        df['total']=round(df['price']*df['size']/100,4)
-        df.set_index('order_number', inplace=True)
-        df = df.reindex(columns=['symbol', 'settlement', 'operation_type', 'size', 'price',
-                            'remaining_size', 'datetime', 'status', 'cancellable', 'total'])
-        return df   # uso: df_hb.combine_first(df) siendo df el que retorna esta funcion
+    def get_detailed_position(self):
+        return self.conn.get_detailed_position()
     
-    def p(self):
-        print(' Order number {}: '.format(self.number))
-        print(' {} {} {} {} nominales a $ {}'.format(self.op_type, self.settlement, self.symbol, self.size, self.price))
-        
-    @staticmethod
-    def build_from_hb_df(df):
-        return df # ver si conviene retornar df, np.array o lista con objetos Order (por el tema velocidad)
+    def get_account_report(self):
+        return self.conn.get_account_report()
+    
+    def get_detailed_instruments(self):
+        rsp = self.conn.get_detailed_instruments()
+        return rsp.instruments if rsp.get('status') == 'OK' else None
+    
+    def market_data_subscription(self, tickers:list=[], depth=1):
+        entries=[ pyRofex.MarketDataEntry.BIDS,
+                  pyRofex.MarketDataEntry.OFFERS, ]
+        return self.conn.market_data_subscription(tickers=tickers, entries=entries, depth=depth)
+    
+    
+    """
+    def (self):
+        return self.conn.()
+    
+    def (self):
+        return self.conn.()
+    
+    def (self):
+        return self.conn.()
+    
+    def (self):
+        return self.conn.()
+    """
+    
 
-# connection_class = pyR
+
+# dir(pyRofex.service)
+# Out[123]: 
+['ApiException',
+ 'Environment',
+ 'Market',
+ 'MarketDataEntry',
+ 'RestClient',
+ 'TimeInForce',
+ 'WebSocketClient',
+ '__builtins__',
+ '__cached__',
+ '__doc__',
+ '__file__',
+ '__loader__',
+ '__name__',
+ '__package__',
+ '__spec__',
+ '_set_environment_parameter',
+ '_set_environment_parameters',
+ '_validate_account',
+ '_validate_environment',
+ '_validate_handler',
+ '_validate_initialization',
+ '_validate_market_data_entries',
+ '_validate_parameter',
+ '_validate_websocket_connection',
+ 'add_websocket_error_handler',
+ 'add_websocket_market_data_handler',
+ 'add_websocket_order_report_handler',
+ 'cancel_order',
+ 'cancel_order_via_websocket',
+ 'close_websocket_connection',
+ 'get_account_position',
+ 'get_account_report',
+ 'get_all_instruments',
+ 'get_all_orders_status',
+ 'get_detailed_instruments',
+ 'get_detailed_position',
+ 'get_instrument_details',
+ 'get_instruments',
+ 'get_market_data',
+ 'get_order_status',
+ 'get_segments',
+ 'get_trade_history',
+ 'getfullargspec',
+ 'globals',
+ 'init_websocket_connection',
+ 'initialize',
+ 'logging',
+ 'market_data_subscription',
+ 'order_report_subscription',
+ 'remove_websocket_error_handler',
+ 'remove_websocket_market_data_handler',
+ 'remove_websocket_order_report_handler',
+ 'send_order',
+ 'send_order_via_websocket',
+ 'set_default_environment',
+ 'set_websocket_exception_handler']     
