@@ -3,7 +3,7 @@ import asyncio
 
 
 import discord
-from api import api, bot_token
+from api_key import api
 from request import test_request_risk, test_request
 
 # api_key = bot_token
