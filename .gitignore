@@ -9,3 +9,4 @@ env/
 testfolder/
 .testfolder
 api.py
+bots/discord/api_key.py

@@ -50,5 +50,3 @@ def test_request_risk(risk):
         print(f'Error en la petición: {str(e)}')
 
     return response
-
-
