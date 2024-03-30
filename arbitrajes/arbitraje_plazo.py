@@ -1,140 +1,190 @@
-# Este script busca desarbitrajes en el mercado argentino en distintos instrumentos (como por ejemplo, acciones, CEDEARs, etc).
+# Este script busca desarbitrajes en el mercado argentino en distintos instrumentos (acciones argentinas, CEDEARs, bonos soberanos, ONs, etc).
 # Compara el precio de compra en contado inmediato (CI) con el precio de venta a 48 horas.
 
-# Importamos API de PPI
-from ppi_client.api.constants import ACCOUNTDATA_TYPE_ACCOUNT_NOTIFICATION, ACCOUNTDATA_TYPE_PUSH_NOTIFICATION
-from ppi_client.api.constants import ACCOUNTDATA_TYPE_ORDER_NOTIFICATION
-from ppi_client.models.account_movements import AccountMovements
-from ppi_client.models.bank_account_request import BankAccountRequest
-from ppi_client.models.foreign_bank_account_request import ForeignBankAccountRequest, ForeignBankAccountRequestDTO
-from ppi_client.models.cancel_bank_account_request import CancelBankAccountRequest
-from ppi_client.models.order import Order
-from ppi_client.ppi import PPI
-from ppi_client.models.order_budget import OrderBudget
-from ppi_client.models.order_confirm import OrderConfirm
-from ppi_client.models.disclaimer import Disclaimer
-from ppi_client.models.investing_profile import InvestingProfile
-from ppi_client.models.investing_profile_answer import InvestingProfileAnswer
-from ppi_client.models.instrument import Instrument
-from datetime import datetime, timedelta
-from ppi_client.models.estimate_bonds import EstimateBonds
-import asyncio
-import json
-import traceback
-import os
+#------------------------------------------------------------------------------
 
-# Importamos otros paquetes necesarios
-import pandas as pd
-import numpy as np
-import datetime
-from datetime import datetime, timedelta
-import seaborn as sns
-import matplotlib.pyplot as plt
+import configparser
 import requests
 
-# Nos conectamos al entorno "Sandbox" (i.e., un entorno de prueba)
-# Cambiar la variable "sandbox" a False para conectarse con la cuenta verdadera
+cred={}
+config = configparser.ConfigParser()
+config.read('PPI.ini')
+cred['AuthorizedClient'] = config.get('Client', 'AuthorizedClient')
+cred['ClientKey'] = config.get('Client', 'ClientKey')
+cred['key_pública'] = config.get('Keys', 'key_publica')
+cred['key_privada'] = config.get('Keys', 'key_privada')
 
-# Keys verdaderas
-#sandbox_public_key=''
-#sandbox_secret_key=''
-ppi = PPI(sandbox=False)
+base_url = 'https://clientapi.portfoliopersonal.com/api'
+api_version = '1.0'
 
-# Cambiar las credenciales de inicio de sesión para conectarse a la API
-ppi.account.login_api(sandbox_public_key,sandbox_secret_key)
+# Definimos los endpoints
+endpoint1 = 'Account/LoginApi'   # Para obtener el token
+endpoint2 = 'MarketData/Book'    # Para poder leer la caja de puntas
+#endpoint = 'MarketData/SearchInstrument'
 
-# Buscamos los precios de los instrumentos
+url = base_url+'/'+api_version+'/'+endpoint1
+#url = f"{base_url}/{api_version}/{endpoint1}"  # esta es otra opcion
+
+headers={
+    'AuthorizedClient': cred['AuthorizedClient'],
+    'ClientKey': cred['ClientKey'],
+    'ApiKey': cred['key_pública'],
+    'ApiSecret': cred['key_privada'],
+}
+
+response = requests.post(url, headers=headers)
+
+if response.status_code == 200:
+    print("")
+    print("POST Request successful!\n")
+    # Obtener el token de la respuesta JSON
+    token = response.json()['accessToken']
+    print("So far, so good... \n")
+else:
+    print(f"Error: {response.status_code}")
+    print(response.text)
+    # Salir del script si la solicitud POST no fue exitosa
+    exit()
+
+#------------------------------------------------------------------------------
+
+# Tickers de ACCIONES argentinas
+#tickers = ["AGRO", "ALUA", "AUSO", "BBAR", "BHIP", "BMA", "BOLT", "BPAT", "BYMA", "CADO", "CAPX", "CECO2",
+#           "CELU", "CEPU", "CGPA2", "COME", "CRE3W", "CRES", "CTIO", "CVH", "DGCU2", "DOME", "DYCA", "EDN", 
+#           "FERR", "FIPL", "GAMI", "GARO", "GBAN", "GCDI", "GCLA", "GGAL", "GRIM", "HARG", "HAVA", "INTR", "INVJ",
+#           "IRS2W", "IRSA", "LEDE", "LOMA", "LONG", "METR", "MIRG", "MOLA", "MOLI", "MORI", "MTR", "OEST", 
+#           "PAMP", "PATA", "RICH", "RIGO", "ROSE", "SUPV", "SAMI", "SEMI", "TECO2", "TGNO4", "TGSU2", "TRAN",
+#           "TXAR", "VALO", "YPFD"]
+
+#tipo_instrumento = "Acciones"
+#comis = 0.6 + 0.126
+
+# Tickers de CEDEARs
+#tickers = [
+#    "AAL", "AAPL", "ABBV", "ABEV", "ABNB", "ABT", "ADBE", "ADGO", "ADP", "AEG", "AEM", "AIG", "AKO.B", "AMAT",
+#    "AMD", "AMGN", "AMX", "AMZN", "ANF", "AOCA", "ARCO", "ARKK", "AVGO", "AVY", "AXP", "AZN", "BA", "BABA",
+#    "BA.C", "BAYN", "BB", "BBD", "BBV", "BCS", "BHP", "BIDU", "BIIB", "BIOX", "BITF", "BK", "BMY", "BNG", "BP",
+#    "BRFS", "BRKB", "C", "CAAP", "CAH", "CAR", "CAT", "CL", "COIN", "COST", "CRM", "CSCO", "CVX", "DD", "DE",
+#    "DEO", "DESP", "DIA", "DISN", "DOCU", "DOW", "EA", "EBAY", "EBR", "EEM", "EFX", "ERIC", "ERJ", "ETSY",
+#    "EWZ", "F", "FCX", "FDX", "FMX", "FSLR", "GE", "GGB", "GILD", "GLOB", "GOLD", "GOOGL", "GPRK", "GRMN",
+#    "GS", "GSK", "HAL", "HD", "HL", "HMY", "HOG", "HON", "HPQ", "HSBC", "HUT", "HWM", "IBM", "IFF", "INFY",
+#    "INTC", "IP", "ITUB", "IWM", "JD", "JMIA", "JNJ", "JPM", "KGC", "KMB", "KO", "LLY", "LMT", "LVS",
+#    "LYG", "MA", "MCD", "MDT", "MELI", "META", "MMM", "MO", "MOS", "MRK", "MSFT", "MSTR", "MU", "MUFG",
+#    "NEM", "NFLX", "NG", "NIO", "NKE", "NMR", "NOKA", "NTCO", "NTES", "NVDA", "ORCL", "OXY", "PAAS", "PANW",
+#    "PBR", "PCAR", "PEP", "PFE", "PG", "PKS", "PSX", "PYPL", "QCOM", "QQQ", "RBLX", "RIO", "ROST", "RTX",
+#    "SAN", "SAP", "SATL", "SBS", "SBUX", "SCCO", "SE", "SHEL", "SHOP", "SI", "SID", "SLB", "SNAP",
+#    "SNOW", "SONY", "SPGI", "SPOT", "SPY", "SQ", "SUZ", "SYY", "T", "TEN", "TGT", "TM", "TMO", "TRIP", "TSLA",
+#    "TSM", "TTE", "TXN", "TXR", "UAL", "UBER", "UGP", "UL", "UNH", "UNP", "UPST", "URBN", "USB", "V",
+#    "VALE", "VIST", "VIV", "VOD", "VRSN", "VZ", "WBA", "WBO", "WFC", "WMT", "X", "XLE", "XLF", "XOM", "XROX",
+#    "YELP", "YY", "YZCA", "ZM"
+#]
+
+#tipo_instrumento = "CEDEARS"
+#comis = 0.6 + 0.126
+
+# Tickers de Bonos Soberanos en pesos
+tickers = ["AL30", "GD30", "GD35", "AL35", "GD38", "AE38", "GD41", "AL29", "AL41", "GD46", "GD29"]
+
+tipo_instrumento = "BONOS"
+comis = 0.6
+
+# Tickers de Bonos del Tesoro Nacional (y otros) en pesos:
+#tickers = ["TV24", "T3X4", "TDF24", "TDJ24", "TDN24","T4X4", "T2X4", "TX24", "TDG24", "T2X5", "TDA24", "T2V4", 
+#           "BPO27", "TV25", "T6X4", "TX26", "TX28", "TX31","DICP", "TVPA", "TVPP","T5X4", "PR13", "PR17", "PARP",
+#           "TO26", "TC25P", "TZX26", "TDE25", "TZX27"]
+
+#tipo_instrumento = "BONOS"
+#comis = 0.6
+
+# Tickers de ONs en pesos
+#tickers = ["TLCHO", "MRCAO", "YCA6O", "YMCJO", "TLC1O", "YMCIO", "MGCHO", "YMCHO", "YPCUO", "TLC5O", "LOC2O", 
+#           "YMCQ", "MGCJO", "MGC9O", "CLSIO", "MTCGO", "SNS9O", "IRCFO", "ARC1O", "CRCEO", "MRCGO", "AEC1O", 
+#           "CS38O", "NPCAO", "GN40O", "LECAO", "RCCJO", "MRCPO", "MRCRO", "IRCEO", "LOC3O", "MRCOO"]
+
+#tipo_instrumento = "ON"
+#comis = 0.6
+
+#print("\nLeyendo tickers de...\n")
+print(f"\nLeyendo tickers de {tipo_instrumento}\n")
+
+#------------------------------------------------------------------------------
+
 print("\nBuscando datos en el mercado...\n")
 
-#------------------------------------------------------------------------
-#         TESTEO
-#------------------------------------------------------------------------
-
-# Obtenemos la hora actual
-current_time = datetime.now().time()
-
-# Estamos viendo si hay diferencia de precios en el momento, no?
-end_date = current_time
-start_date = current_time
-
-# Imprimos las fechas para corroborar que estén bien
-print("Fecha del último dato disponible:", end_date)
-print("Fecha del día anterior (hábil):  ", start_date)
-
-# Creamos una lista para almacenar los precios
-data_list = []
-
-# Tickers de algunas empresas argentinas que cotizan
-tickers_arg_test = ["AGRO", "ALUA", "AUSO", "BBAR", "BHIP", "BMA", "CELU", "CEPU", "CRES", "CTIO", "CVH", "EDN",
-           "PAMP", "SUPV", "TGSU2", "TRAN", "TXAR"]
-
-# Tickers de algunos CEDEARs
-tickers_cedears_test = [
-    "AAPL", "ADBE", "AMZN", "ARKK", "BIDU", "BIOX", "BK", "DIA", "EWZ", "FSLR", "JPM", "MELI", "META", 
-    "QCOM", "QQQ", "SPOT", "SPY", "TSLA", "ZM"
-]
-
-#------------------------------------------------------------------------
-# ACA INTENTAMOS LEER LA CAJA DE PUNTAS SIN EXITO AUN
-# Definimos la URL de la API para obtener la información de la caja de puntas
-url = 'https://clientapi.portfoliopersonal.com/api/1.0/MarketData/Book?ticker=ALUA&type=ACCIONES&settlement=A-48HS'
-
-# Hacemos la solicitud GET a la URL
-response = requests.get(url)
-
-# Imprimir la respuesta
-print(response.text)
-
-# Verificamos si la solicitud fue exitosa (código de estado 200)
-if response.status_code == 200:
-    # Extraemos los datos de la respuesta en formato JSON
-    data = response.json()
-    # Ahora puedes procesar los datos obtenidos, que generalmente incluirán la caja de puntas
-    # Por ejemplo, podrías acceder a los precios de compra (bid) y venta (ask)
-    bid_price = data['bid']
-    ask_price = data['ask']
-    # Luego puedes usar estos precios para tu lógica de arbitraje
-else:
-    # Si la solicitud no fue exitosa, maneja el error adecuadamente
-    print('Error al obtener la información de la caja de puntas:', response.status_code)
-#------------------------------------------------------------------------
-
-# COMISIONES POR OPERACIONES (1)
-# (1) Adicionalmente a estos aranceles y comisiones se le deberán sumar los derechos de Mercado aplicables 
-# a las operaciones que fije el Bolsas y Mercados de Argentina S.A., Matba Rofex S.A., 
-# Mercado Argentino de Valores S.A., y el Mercado Abierto Electrónico S.A. 
-# vigentes al momento de la operación de acuerdo a lo publicado en [ver sitios web]
-
-# Vigentes desde el 1ro de Noviembre de 2023
-# Compra/Venta de acciones y Cedears: 0,6% + IVA
+url = base_url+'/'+api_version+'/'+endpoint2
 
 # Creamos una lista para almacenar las oportunidades de arbitraje
 arbitrage_opportunities = []
 
-# Iteramos a través de los tickers para obtener los datos de los precios en CI y a 48 horas
-for ticker in tickers_arg_test:
-    # Obtenemos el precio de mercado para el ticker actual a 48 horas
-    current_market_data_48hs = ppi.marketdata.current(ticker, "Acciones", "A-48HS")
-    print("Chequear precios de compra y venta!")
-    print(current_market_data_48hs)
-    # usar response = requests.get(url)
+for ticker in tickers:
+    # Parámetros de la solicitud GET
+    params_CI = {
+        'ticker': ticker,
+        'type': tipo_instrumento,
+        'settlement': 'INMEDIATA'
+    }
     
-    # Obtenemos el precio de mercado para el mismo ticker (actual) pero en CI
-    current_market_data_CI = ppi.marketdata.current(ticker, "Acciones", "INMEDIATA")
+    params_48 = {
+        'ticker': ticker,
+        'type': tipo_instrumento,
+        'settlement': 'A-48HS'
+    }
     
-    charge_buy = current_market_data_CI['price'] * (0.6 + 0.126) / 100
-    buy_price = current_market_data_CI['price'] + charge_buy
+    # Headers para la solicitud GET
+    headers = {
+        'AuthorizedClient': cred['AuthorizedClient'],
+        'ClientKey': cred['ClientKey'],
+        'Content-Type': "application/json",
+        'Authorization': f"Bearer {token}",
+    }
+    
+    # Realizar la solicitud GET para obtener la caja de puntas
+    response_CI = requests.get(url, headers=headers, params=params_CI)
+    response_48 = requests.get(url, headers=headers, params=params_48)
+    
+    # Verificar si la solicitud GET fue exitosa
+    if response_CI.status_code == 200 and response_48.status_code == 200:
+        # Obtener los datos de la respuesta en formato JSON
+        book_data_CI = response_CI.json()
+        book_data_48 = response_48.json()
 
-    charge_sell = current_market_data_48hs['price'] * (0.6 + 0.126) / 100
-    net_income = current_market_data_48hs['price'] - charge_sell
-    
-    if net_income > buy_price:
-        print("\nHay una nueva oportunidad de arbitraje!")
-        percentage_earn = (net_income - buy_price) * 100 / net_income
-        volume = current_market_data_48hs['volume']
-        print(current_market_data_48hs['volume'])        
-        arbitrage_opportunities.append((ticker, round(percentage_earn, 2), volume))
+        print(f"Ticker: {ticker}")
         
+        print("\n")
+           
+        # Imprimimos solo el primer valor de bid en CI y 48hs
+        first_bid_CI = book_data_CI['bids'][0]
+        print(f"First Bid CI: Position: {first_bid_CI['position']}, Price: {first_bid_CI['price']}, Quantity: {first_bid_CI['quantity']}")
+        first_bid_48 = book_data_48['bids'][0]
+        print(f"First Bid 48hs: Position: {first_bid_48['position']}, Price: {first_bid_48['price']}, Quantity: {first_bid_48['quantity']}")
+
+        # Imprimimos solo el primer valor de offers/asks en CI y 48hs
+        first_offer_CI = book_data_CI['offers'][0]
+        print(f"First Offer CI: Position: {first_offer_CI['position']}, Price: {first_offer_CI['price']}, Quantity: {first_offer_CI['quantity']}")
+        first_offer_48 = book_data_48['offers'][0]
+        print(f"First Offer 48hs: Position: {first_offer_48['position']}, Price: {first_offer_48['price']}, Quantity: {first_offer_48['quantity']}")
+        
+        print("\n")
+        
+        charge_buy = first_offer_CI['price'] * comis / 100
+        buy_price = first_offer_CI['price'] + charge_buy
+
+        charge_sell = first_bid_48['price'] * comis / 100
+        net_income = first_bid_48['price'] - charge_sell
+        
+        if net_income > buy_price and first_offer_CI['price'] != 0:
+            print("\nHay una nueva oportunidad de arbitraje!")
+            percentage_earn = (net_income - buy_price) * 100 / first_offer_CI['price']
+            arbitrage_opportunities.append((ticker, round(percentage_earn, 2)))
+    else:
+        # Mostrar un mensaje de error si la solicitud GET no fue exitosa
+        print(f"Ticker: {ticker}")
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        print("\n\n")
+
+#------------------------------------------------------------------------------
+
 # Ordenamos la lista de oportunidades de arbitraje por porcentaje de ganancia en orden descendente
 arbitrage_opportunities.sort(key=lambda x: x[1], reverse=True)
 
@@ -154,19 +204,8 @@ if len(arbitrage_opportunities) >= 1:
         gain_str = gain_str.ljust(max_len)
         # Imprime las líneas con el mismo formato
         print(f"{ticker_str} {gain_str}")
-#    for opportunity in arbitrage_opportunities:
-#        print(f"Ticker: {opportunity[0]}, Ganancia: {opportunity[1]}%")
 else:
-    print("\nNo hay oportunidades de arbitraje por el momento :-(")
+    print("\nNo hay oportunidades de arbitraje por el momento :-( ")
 
-
-# Imprimir las oportunidades de arbitraje en orden descendente
-if len(arbitrage_opportunities) >= 1:
-    print("\nHay oportunidades de arbitraje!")
-    for ticker, porcentaje_ganancia, vol in arbitrage_opportunities:
-        print("-----------------------------------")
-        print("Ticker:  ", ticker)
-        print("Ganancia:", porcentaje_ganancia,"%")
-        print("Volumen: ", vol)
 
 
