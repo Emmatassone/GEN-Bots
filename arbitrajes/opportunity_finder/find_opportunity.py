@@ -20,4 +20,3 @@ class ArbitrageOpportunityFinder:
             return round(percentage_earn, 2), self.volume_CI
         else:
             return None
-
