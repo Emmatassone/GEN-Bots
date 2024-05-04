@@ -30,7 +30,7 @@ def update_portfolio(update_data: PortfolioUpdate):
     try:
         portfolio = Portfolio(assets, train_start, train_end, test_start, test_end)
         #
-        portfolio.update_portfolio_test()
+        portfolio.update_portfolio()
         #
         report = generate_report(portfolio.portfolio_daily_returns)
         return report
@@ -75,6 +75,7 @@ class Portfolio:
             raise e
         return {'Portfolio Updated': 'Successfully'}
 
+    #test no implementado
     def update_portfolio_test(self):
         global risk_level_global
         risk_level = risk_level_global
