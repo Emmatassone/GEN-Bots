@@ -4,7 +4,6 @@
 import configparser
 import pyRofex
 import datetime
-from icecream import ic
 
 
 class MatrizCredentials:
@@ -55,7 +54,7 @@ class ArbitrageFinder:
             if instrument['cficode'] == cfi_code:
                 descripcion = instrument['instrumentId']['symbol']
                 palabras = descripcion.split(' - ')
-                ticker = palabras[2]
+                ticker = palabras[2]               
                 if palabras[3] == "CI" and not ticker.endswith("C") and not (ticker.endswith("D") and 
                                                                              ticker != "YPFD"):
                     entries = [
@@ -97,17 +96,17 @@ class ArbitrageFinder:
                     net_income_1 = sell_price_1 - buy_price_1
                     
                     caucion_48hs = self.caucion_income(instruments, buy_price_1, self.anual, self.derechos)
-                    
+
                     # Chequeamos posible desarbitraje
                     if net_income_1 > caucion_48hs:
                         percentage_earn = net_income_1 * 100 / offer_price_CI
                         earn_over_caucion = (net_income_1 - caucion_48hs) / caucion_48hs
                         arbitrage_opportunities.append({
                             'ticker': ticker,
-                            'buy price': offer_price_CI,
-                            'sell price': bid_price_48hs,
-                            'percentage earn': round(percentage_earn, 2),
-                            'percentage earn over caucion': round(earn_over_caucion, 2),
+                            'buy_price': offer_price_CI,
+                            'sell_price': bid_price_48hs,
+                            'percentage_earn': round(percentage_earn, 2),
+                            'percentage_earn_over_caucion': round(earn_over_caucion, 2),
                             'volume': min(offer_vol_CI, bid_vol_48hs)
                         })
         
@@ -222,5 +221,6 @@ def main():
     printer = ArbitragePrinter()
     printer.print_opportunities(arbitrage)
     
+
 if __name__ == "__main__":
     main()
