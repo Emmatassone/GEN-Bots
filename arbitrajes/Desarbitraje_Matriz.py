@@ -5,7 +5,6 @@ import configparser
 import pyRofex
 import datetime
 
-
 class MatrizCredentials:
     def __init__(self, config_file):
         self.config = configparser.ConfigParser()
@@ -99,6 +98,11 @@ class ArbitrageFinder:
 
                     # Chequeamos posible desarbitraje
                     if net_income_1 > caucion_48hs:
+                        print(ticker)
+                        print(net_income_1)
+                        print(caucion_48hs)
+                        print("")
+                        
                         percentage_earn = net_income_1 * 100 / offer_price_CI
                         earn_over_caucion = (net_income_1 - caucion_48hs) / caucion_48hs
                         arbitrage_opportunities.append({
@@ -140,10 +144,11 @@ class ArbitrageFinder:
                                 offer_vol = offer[0]['size']
                                 duracion = cauciones.split(' - ')[-1]
                                 dias = self.duracion_dias[duracion]
-                                comis_1 = (buy_price * self.anual / (100 * 365))*(1. + 0.21) * dias
-                                comis_2 = (buy_price * self.derechos / 100) * dias
+                                total = buy_price + (buy_price / 100) * (bid_tasa * dias / 365)
+                                comis_1 = (total * self.anual / (100 * 360))*(1. + 0.21) * dias
+                                comis_2 = (total * self.derechos / 100) * dias
                                 comis_total = comis_1 + comis_2
-                                caucion_48hs = (buy_price / 100) * (bid_tasa * dias / 365) - comis_total
+                                caucion_48hs = total - comis_total - buy_price
                                 return caucion_48hs
                         break
 
@@ -220,7 +225,7 @@ def main():
         
     printer = ArbitragePrinter()
     printer.print_opportunities(arbitrage)
-    
+
 
 if __name__ == "__main__":
     main()
