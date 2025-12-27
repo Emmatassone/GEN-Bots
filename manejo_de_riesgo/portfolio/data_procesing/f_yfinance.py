@@ -20,10 +20,20 @@ class YFinanceDataFetcher:
             pd.DataFrame: DataFrame containing daily returns for the specified assets.
         """
         assets.sort()
-        data = yf.download(assets, start=start, end=end)
-        data = data.loc[:, ('Adj Close', slice(None))]
-        data.columns = assets
-        asset_daily_change = data[assets].pct_change().dropna()
+        # Use auto_adjust=False to get 'Adj Close' column explicitly
+        data = yf.download(assets, start=start, end=end, auto_adjust=False)
+
+        # Handle both single and multi-asset downloads
+        if isinstance(data.columns, pd.MultiIndex):
+            # For multiple assets, extract 'Adj Close' from MultiIndex
+            data = data.loc[:, ('Adj Close', slice(None))]
+            data.columns = data.columns.droplevel(0)
+        else:
+            # For single asset, just get the 'Adj Close' column
+            data = data[['Adj Close']]
+            data.columns = assets
+
+        asset_daily_change = data.pct_change().dropna()
         asset_daily_returns = asset_daily_change
         return asset_daily_returns
 
